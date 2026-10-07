@@ -50,14 +50,14 @@ Ledger là Phase 2 vì nó là lý do viết lại. Bản Apps Script không ch�
 **Depends on:** Nothing (first phase)
 **Requirements:** INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05, INFRA-06, INFRA-07, AUTH-01, AUTH-02, AUTH-03, AUTH-06
 
-**Plans:** 3/6 plans executed
+**Plans:** 4/6 plans executed
 
 Plans:
 
 - [x] 01-01-PLAN.md — Scaffold + pin versions + cấu hình deploy (INFRA-01, INFRA-03, INFRA-04, INFRA-05)
 - [x] 01-02-PLAN.md — Schema, Prisma/Neon adapter, seed allowlist có thẩm quyền (INFRA-02, INFRA-06, AUTH-02)
 - [x] 01-03-PLAN.md — Design token + app shell tĩnh (INFRA-07)
-- [ ] 01-04-PLAN.md — Google OAuth, allowlist gate, route guard `src/proxy.ts` (AUTH-01, AUTH-02, AUTH-03, AUTH-06)
+- [x] 01-04-PLAN.md — Google OAuth, allowlist gate, route guard `src/proxy.ts` (AUTH-01, AUTH-02, AUTH-03, AUTH-06)
 - [ ] 01-05-PLAN.md — Ba màn hình + gate build chứng minh PPR và proxy (INFRA-07, AUTH-01, AUTH-06)
 - [ ] 01-06-PLAN.md — Checklist thao tác tay tiếng Việt + kiểm chứng live (INFRA-02..05, AUTH-01..06)
 

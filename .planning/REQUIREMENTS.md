@@ -21,12 +21,12 @@ Requirements LEDG-01..07 and MONEY-01..06 exist specifically to make this imposs
 
 ### Xác thực & Thành viên (AUTH)
 
-- [ ] **AUTH-01**: Người dùng đăng nhập bằng tài khoản Google, một chạm
+- [x] **AUTH-01**: Người dùng đăng nhập bằng tài khoản Google, một chạm
 - [x] **AUTH-02**: Chỉ email nằm trong allowlist lưu ở DB mới đăng nhập được; thêm thành viên mới là một dòng INSERT, không cần deploy lại
-- [ ] **AUTH-03**: Người dùng giữ nguyên phiên đăng nhập qua nhiều lần mở app, không phải login lại mỗi ngày
+- [x] **AUTH-03**: Người dùng giữ nguyên phiên đăng nhập qua nhiều lần mở app, không phải login lại mỗi ngày
 - [ ] **AUTH-04**: Danh tính nội bộ là `User.id`; đổi tên hiển thị không ảnh hưởng bất kỳ dòng ledger lịch sử nào
 - [ ] **AUTH-05**: Người dùng tự sửa tên hiển thị và ảnh đại diện của mình
-- [ ] **AUTH-06**: Người dùng đăng xuất được từ mọi màn hình
+- [x] **AUTH-06**: Người dùng đăng xuất được từ mọi màn hình
 
 ### Ledger & Tính đúng (LEDG)
 
@@ -157,10 +157,10 @@ Mapped by `ROADMAP.md` — 64/64 v1 requirements covered, no orphans, no duplica
 | INFRA-05 | Phase 1 — Nền tảng sống | Complete |
 | INFRA-06 | Phase 1 — Nền tảng sống | Complete |
 | INFRA-07 | Phase 1 — Nền tảng sống | Complete |
-| AUTH-01 | Phase 1 — Nền tảng sống | Pending |
+| AUTH-01 | Phase 1 — Nền tảng sống | Complete |
 | AUTH-02 | Phase 1 — Nền tảng sống | Complete |
-| AUTH-03 | Phase 1 — Nền tảng sống | Pending |
-| AUTH-06 | Phase 1 — Nền tảng sống | Pending |
+| AUTH-03 | Phase 1 — Nền tảng sống | Complete |
+| AUTH-06 | Phase 1 — Nền tảng sống | Complete |
 | LEDG-01 | Phase 2 — Lõi sổ cái & toán tiền | Pending |
 | LEDG-02 | Phase 2 — Lõi sổ cái & toán tiền | Pending |
 | LEDG-03 | Phase 2 — Lõi sổ cái & toán tiền | Pending |

@@ -3,6 +3,7 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { normalizeEmail } from "@/lib/allowlist";
 import { prisma } from "@/lib/db";
+import { isAuthorizedRequest } from "@/lib/route-guard";
 
 // Cấu hình xác thực DUY NHẤT của dự án. Mọi phase sau lấy user hiện tại bằng
 // cách gọi `auth()` từ đây; không nơi nào khác được tự dựng NextAuth().
@@ -35,6 +36,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/dang-nhap",
   },
   callbacks: {
+    // PHẦN QUYẾT ĐỊNH CỦA ROUTE GUARD. src/proxy.ts chỉ MẮC DÂY guard; callback
+    // này là thứ duy nhất khiến guard TỪ CHỐI được.
+    //
+    // Không có nó, next-auth đặt `let authorized = true` rồi không bao giờ gán
+    // lại (node_modules/next-auth/lib/index.js:146), nên handleAuth luôn rơi
+    // xuống `NextResponse.next()`: proxy vẫn chạy, vẫn đặt cookie csrf, và vẫn
+    // cho MỌI request đi qua. Dòng `ƒ Proxy (Middleware)` trong output build
+    // chứng minh file đã mắc dây, KHÔNG chứng minh nó chặn — đó là hai việc
+    // khác nhau, và chỉ phép thử runtime phân biệt được.
+    //
+    // Trả về `false` để Auth.js tự redirect về `pages.signIn` (/dang-nhap).
+    // Không tự dựng NextResponse.redirect ở đây: Auth.js đã gắn sẵn callbackUrl
+    // để sau khi đăng nhập xong người dùng quay lại đúng trang vừa bị chặn.
+    //
+    // Thân hàm nằm ở src/lib/route-guard.ts — module thuần, test nạp được mà
+    // không kéo theo Prisma. Quyết định của guard phải có test, và trước CR-01
+    // nó không có test nào vì bị khóa sau import này.
+    authorized({ auth: session }) {
+      return isAuthorizedRequest(session);
+    },
+
     // CỔNG ALLOWLIST. Đây là lớp kiểm soát truy cập DUY NHẤT của app.
     //
     // AUTH-02 — vì sao từ chối ở đây là KHÔNG ghi một dòng nào:

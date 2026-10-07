@@ -51,6 +51,16 @@ export const config = {
   //   _next/static, _next/image, favicon.ico
   //                         — tài nguyên build; cho chúng qua guard chỉ tổ đốt
   //                           một vòng database cho mỗi file.
+  //
+  // CHUỖI PHẢI VIẾT THẲNG Ở ĐÂY, không được import hằng số vào.
+  // Turbopack phân tích `config` lúc BIÊN DỊCH và từ chối mọi giá trị không
+  // phải chuỗi tĩnh: thử thay bằng `matcher: [PROTECTED_ROUTE_MATCHER]` làm
+  // `next build` đỏ với "Entry `matcher[0]` need to be static strings".
+  //
+  // Bản sao đối chiếu nằm ở src/lib/route-guard.ts để test nạp được phạm vi
+  // guard mà không kéo theo NextAuth → Prisma → src/lib/db.ts (module throw
+  // lúc nạp). Test "khớp từng ký tự" trong route-guard.test.ts đọc CHÍNH file
+  // này và so sánh, nên hai bản không thể trôi lệch trong im lặng.
   matcher: [
     "/((?!api/auth|dang-nhap|chua-duoc-moi|manifest.webmanifest|icons|_next/static|_next/image|favicon.ico).*)",
   ],

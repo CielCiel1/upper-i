@@ -6,15 +6,15 @@ current_phase: 1
 current_phase_name: Nền tảng sống
 status: executing
 stopped_at: Completed 01-04 — auth, allowlist gate and route guard; next is 01-05 (screens)
-last_updated: "2026-10-07T08:26:05.788Z"
+last_updated: "2026-10-07T08:42:50.620Z"
 last_activity: 2026-10-07
-last_activity_desc: "Completed 01-04: Auth.js config, allowlist gate, src/proxy.ts route guard, auth server actions"
+last_activity_desc: "Completed 01-04: Google sign-in, allowlist gate, route guard"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 6
-  completed_plans: 4
-  percent: 67
+  completed_plans: 5
+  percent: 0
 ---
 
 # Project State
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-10-06)
 ## Current Position
 
 Phase: 1 of 9 (Nền tảng sống)
-Plan: 4 of 6 in current phase
-Status: Executing
+Plan: 5 of 6 in current phase
+Status: Ready to execute
 Last activity: 2026-10-07 — Completed 01-04: Google sign-in, allowlist gate, route guard
 
 Progress: [███████░░░] 67%
@@ -59,6 +59,7 @@ Progress: [███████░░░] 67%
 | Phase UPI-01 P03 | 35m | 3 tasks | 6 files |
 | Phase UPI-01 P02 | 25m | 3 tasks | 9 files |
 | Phase 1 P04 | 25m | 3 tasks | 6 files |
+| Phase UPI-01-n-n-t-ng-s-ng P05 | 35m | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase ?]: 01-03: kept !important in reduced-motion with scoped biome-ignore — @layer base loses the cascade without it (WCAG 2.3.3)
 - [Phase ?]: Allowlist has no schema relation to User; session revocation is explicit, protecting Phase 2 ledger FK targets
 - [Phase ?]: INFRA-06 pooled-connection assertion throws at module load so a swapped string fails at build, not under production load
+- [Phase ?]: Verbatim Vietnamese UI copy is written as JSX string expressions, not bare text — the formatter rewraps bare text and silently breaks exact-match contract greps
+- [Phase ?]: The /chua-duoc-moi direct-access guard requires ?error=AccessDenied; it is a usability gate, explicitly not an authentication boundary
 
 ### Pending Todos
 
@@ -102,6 +105,6 @@ Từ research, cần để mắt khi tới phase liên quan:
 
 ## Session Continuity
 
-Last session: 2026-10-07T08:25:58.388Z
+Last session: 2026-10-07T08:42:43.288Z
 Stopped at: Roadmap created and verified — all 64 v1 REQ-IDs mapped to phases, zero orphans
 Resume file: None

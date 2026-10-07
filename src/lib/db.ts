@@ -1,6 +1,6 @@
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@/generated/prisma/client";
-import { isPooledConnectionString } from "./connection-string";
+import { poolingProblem } from "./connection-string";
 
 // Điểm vào database DUY NHẤT của dự án. Mọi phase sau import `prisma` từ đây;
 // không module nào khác được tự dựng PrismaClient.
@@ -31,9 +31,15 @@ if (!connectionString) {
 //     thật được kiểm tra ở đó. Thu hẹp check này về runtime sẽ giữ gate local
 //     xanh nhưng để một chuỗi cắm nhầm deploy trót lọt — đúng kiểu hỏng âm thầm
 //     mà phép kiểm tra này sinh ra để chặn.
-if (!isPooledConnectionString(connectionString)) {
+// Thông báo nêu ĐÚNG nguyên nhân trong ba nguyên nhân khác nhau cùng làm phép
+// kiểm tra trượt (không phân tích được / không có host / đúng là direct). Bản
+// trước khẳng định "không pooled" cho cả ba, nên một giá trị còn nguyên dấu
+// nháy — chuỗi THẬT SỰ có chứa '-pooler' — bị báo là không pooled, và người
+// vận hành đi tìm sai chỗ. Xem poolingProblem() để biết chi tiết.
+const problem = poolingProblem(connectionString);
+if (problem !== null) {
   throw new Error(
-    "DATABASE_URL không trỏ tới endpoint POOLED của Neon (hostname phải có hậu tố '-pooler' ở nhãn đầu). " +
+    `DATABASE_URL không dùng được làm endpoint POOLED của Neon: ${problem} ` +
       "Chuỗi direct sẽ làm cạn connection limit khi serverless function scale ngang. " +
       "Chuỗi direct chỉ dùng cho DATABASE_URL_UNPOOLED, phục vụ lệnh CLI của Prisma.",
   );

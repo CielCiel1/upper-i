@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPooledConnectionString } from "./connection-string";
+import { isPooledConnectionString, poolingProblem } from "./connection-string";
 
 // Neon dựng chuỗi thật dài nên test ghép scheme ra hằng số cho dễ đọc.
 const PG = "postgresql://";
@@ -58,5 +58,68 @@ describe("isPooledConnectionString", () => {
     ["thiếu host", `${PG}user:pw@/neondb`],
   ])("từ chối %s", (_label, raw) => {
     expect(isPooledConnectionString(raw)).toBe(false);
+  });
+});
+
+/* HI-03. `isPooledConnectionString` trả `false` cho BA nguyên nhân khác hẳn
+ * nhau, còn thông báo lỗi ở src/lib/db.ts chỉ khẳng định được một ("không
+ * pooled"). Hậu quả không phải lý thuyết: một giá trị còn nguyên dấu nháy —
+ * chuỗi THẬT SỰ chứa '-pooler' — bị báo là không pooled, nên người đọc đi tìm
+ * sai chỗ. Ở checkpoint 01-06, người vận hành vừa dán một chuỗi Neon thật vào
+ * dashboard Vercel và sẽ đọc thông báo đó như một lỗi của phép kiểm tra. */
+describe("poolingProblem (HI-03)", () => {
+  it("trả null cho chuỗi pooled hợp lệ", () => {
+    expect(poolingProblem(pooled)).toBeNull();
+  });
+
+  /* Trường hợp đã thực sự xảy ra khi chạy gate build. Thông báo PHẢI nhắc tới
+   * dấu nháy, vì đó là thứ cần sửa — không phải hậu tố -pooler. */
+  it("nêu đúng nguyên nhân dấu nháy, không đổ cho '-pooler'", () => {
+    const quoted = `"${pooled}"`;
+    const problem = poolingProblem(quoted) ?? "";
+    expect(problem).toMatch(/dấu nháy/);
+    expect(problem).not.toMatch(/DIRECT/);
+  });
+
+  /* Echo lại đoạn đầu giá trị là thứ khiến trường hợp dấu nháy tự chẩn đoán
+   * được: người vận hành NHÌN THẤY ký tự `"` nằm ở đầu. */
+  it("echo lại đoạn đầu của giá trị sai", () => {
+    expect(poolingProblem(`"${pooled}"`) ?? "").toContain('\\"');
+  });
+
+  /* Không rò mật khẩu: chỉ 24 ký tự đầu, dừng trước phần sau `://user:`. */
+  it("không echo quá 24 ký tự đầu nên không lộ mật khẩu", () => {
+    const secret = "sieu-bi-mat-khong-duoc-lo";
+    const problem = poolingProblem(`"${PG}user:${secret}@h-pooler.x/db"`) ?? "";
+    expect(problem).not.toContain(secret);
+  });
+
+  it("gọi tên host và nhãn đầu khi đúng là endpoint direct", () => {
+    const problem = poolingProblem(direct) ?? "";
+    expect(problem).toMatch(/DIRECT/);
+    expect(problem).toContain("ep-cool-art-123456");
+  });
+
+  /* Ba nguyên nhân phải cho ba thông báo KHÁC nhau — đó là toàn bộ nội dung
+   * của HI-03. Gộp chúng lại là tái tạo đúng lỗi vừa sửa. */
+  it("ba nguyên nhân cho ba thông báo khác nhau", () => {
+    const messages = [
+      poolingProblem(direct),
+      poolingProblem(`"${pooled}"`),
+      poolingProblem("garbage"),
+    ];
+    expect(messages.every((m) => m !== null)).toBe(true);
+    expect(new Set(messages).size).toBeGreaterThan(1);
+  });
+
+  /* isPooledConnectionString phải vẫn là đúng predicate đó, chỉ diễn đạt lại
+   * qua poolingProblem — không được trôi thành hai luật khác nhau. */
+  it.each([
+    pooled,
+    direct,
+    "garbage",
+    "",
+  ])("đồng nhất với isPooledConnectionString cho %s", (raw) => {
+    expect(poolingProblem(raw) === null).toBe(isPooledConnectionString(raw));
   });
 });

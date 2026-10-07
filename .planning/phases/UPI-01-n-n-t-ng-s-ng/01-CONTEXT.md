@@ -34,6 +34,7 @@ ledger thuộc Phase 2 và phải được thiết kế trọn vẹn ở đó, k
 
 - **Session strategy: database session, không dùng JWT.** Allowlist là cơ chế bảo vệ duy nhất của app. Với JWT, gỡ một người khỏi allowlist không đuổi họ ra được cho tới khi token hết hạn. Database session kiểm tra mỗi request nên thu hồi quyền có hiệu lực tức thì. Prisma adapter đã tạo sẵn bảng `Session` nên không phát sinh việc.
 - **Seed allowlist bằng script `pnpm seed` đọc từ biến môi trường.** Danh sách email nằm trong `.env`, chạy một lệnh là xong. Hardcode trong migration thì mỗi lần sửa danh sách phải viết migration mới; gõ SQL tay thì không lặp lại được khi dựng lại DB.
+- **Seed script là nguồn sự thật, không chỉ upsert.** Script phải xoá những dòng allowlist không còn trong biến môi trường, và cascade xoá luôn `Session` của người bị gỡ. Lý do: database session chỉ chạy `signIn` lúc đăng nhập, nên gỡ khỏi allowlist mà không xoá session thì người đó vẫn vào được. Nếu chỉ upsert thì `.env` và DB thành hai nguồn sự thật lệch nhau — đúng loại lỗi đã giết bản cũ. Gỡ người = xoá email khỏi `.env` + chạy `pnpm seed`.
 - **Người ngoài allowlist thấy một trang từ chối có giải thích** — "Email này chưa được mời" kèm nút đăng xuất. Redirect im lặng về trang login tạo vòng lặp khiến người dùng tưởng app hỏng.
 - **Chưa làm trang quản lý allowlist trong app.** REQ AUTH-02 chỉ yêu cầu thêm thành viên không cần deploy lại — seed script đã thoả. Trang admin là tiện lợi, không phải yêu cầu, và nhóm cố định thì thêm người vài lần một năm. Thêm sau rất rẻ vì schema đã có sẵn.
 - **Google OAuth consent screen để ở chế độ Testing.** Chấp nhận phải đồng bộ tay hai danh sách (test user ở Google Console và bảng allowlist ở DB) để đổi lấy một cổng chặn thứ hai miễn phí.
@@ -52,6 +53,8 @@ ledger thuộc Phase 2 và phải được thiết kế trọn vẹn ở đó, k
 - **Dùng `proxy.ts`, KHÔNG dùng `middleware.ts`.** Next.js 16 đã đổi tên; hầu hết tutorial còn sai. Điểm lợi: `proxy.ts` chạy trên Node runtime nên Prisma dùng được, không còn vướng giới hạn edge runtime.
 - **Kết nối Neon qua pooled connection string + `@prisma/adapter-neon`;** `DIRECT_URL` chỉ dùng cho `migrate`. Thiếu pooling là cạn connection khi nhiều serverless function chạy song song.
 - **Region: Neon `ap-southeast-1`, Vercel function `sin1`.** Cùng Singapore để giảm độ trễ cho người dùng ở Việt Nam.
+
+- **Bật `noUncheckedIndexedAccess` trong tsconfig ngay từ Phase 1.** Phase 2 đầy phép truy cập mảng theo chỉ số trong thuật toán chia tiền; bật sau nghĩa là phải sửa một đống vi phạm đã tích luỹ.
 
 ### Agent's Discretion
 

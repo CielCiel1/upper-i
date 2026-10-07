@@ -1,0 +1,17 @@
+{
+  "mode": "yolo",
+  "granularity": "standard",
+  "parallelization": true,
+  "commit_docs": true,
+  "model_profile": "adaptive",
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true
+  },
+  "plan_review": {
+    "source_grounding": true
+  },
+  "project_structure": "single-repo",
+  "project_mode": "mvp"
+}

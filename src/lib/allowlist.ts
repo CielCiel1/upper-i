@@ -4,6 +4,19 @@ export type AllowlistEntry = {
 };
 
 /**
+ * Chuẩn hóa một email về dạng dùng để so khớp: cắt khoảng trắng, hạ chữ thường.
+ *
+ * Đây là một bản logic DUY NHẤT dùng chung cho cả hai đầu của allowlist: seed
+ * ghi vào `Allowlist.email` qua parseAllowlist(), và callback `signIn` tra cứu
+ * qua hàm này. Hai đầu mà chuẩn hóa lệch nhau thì một thành viên thật đăng nhập
+ * bằng `An.Nguyen@Example.COM` sẽ không khớp dòng đã seed `an.nguyen@example.com`
+ * — bị khóa ra ngoài trong im lặng, không có lỗi nào để lần theo.
+ */
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+/**
  * Phân tích biến môi trường ALLOWLIST_EMAILS thành các mục đã chuẩn hóa.
  *
  * Định dạng: `email[:nhãn]`, phân tách bằng dấu phẩy.
@@ -45,9 +58,10 @@ function parseEntry(segment: string): AllowlistEntry {
   const label = rawLabel.trim();
 
   return {
-    // Hạ chữ vô điều kiện: phép tra cứu lúc đăng nhập cũng hạ chữ, nên một địa
-    // chỉ lưu ở dạng hoa sẽ không bao giờ khớp.
-    email: rawEmail.trim().toLowerCase(),
+    // Đi qua đúng hàm mà callback `signIn` dùng để tra cứu. Gọi chung một hàm
+    // thay vì lặp lại `.trim().toLowerCase()` là điều khiến hai đầu không thể
+    // trôi lệch nhau về sau.
+    email: normalizeEmail(rawEmail),
     label: label.length > 0 ? label : null,
   };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseAllowlist } from "./allowlist";
+import { normalizeEmail, parseAllowlist } from "./allowlist";
 
 describe("parseAllowlist", () => {
   it("tách danh sách phân cách bằng dấu phẩy thành từng mục", () => {
@@ -66,5 +66,29 @@ describe("parseAllowlist", () => {
     ["chỉ có dấu phẩy", ",,,"],
   ])("throw khi %s phân tích ra không mục nào", (_label, raw) => {
     expect(() => parseAllowlist(raw)).toThrow(/ALLOWLIST_EMAILS/);
+  });
+});
+
+describe("normalizeEmail", () => {
+  it("hạ chữ thường", () => {
+    expect(normalizeEmail("An.Nguyen@Example.COM")).toBe(
+      "an.nguyen@example.com",
+    );
+  });
+
+  it("cắt khoảng trắng hai đầu", () => {
+    expect(normalizeEmail("  an@example.com  ")).toBe("an@example.com");
+  });
+
+  it("đã chuẩn rồi thì giữ nguyên", () => {
+    expect(normalizeEmail("an@example.com")).toBe("an@example.com");
+  });
+
+  // Khẳng định quan trọng nhất của cả file: đây đúng là bất biến mà allowlist
+  // dựa vào. Email seed vào database và email người dùng gõ ở màn hình Google
+  // phải quy về cùng một chuỗi, nếu không phép tra cứu theo khóa chính trượt.
+  it("quy một địa chỉ hoa-thường lẫn lộn về đúng giá trị mà seed lưu", () => {
+    const seeded = parseAllowlist("An.Nguyen@Example.COM")[0]?.email;
+    expect(normalizeEmail("  AN.NGUYEN@example.com ")).toBe(seeded);
   });
 });

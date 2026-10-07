@@ -1,6 +1,6 @@
 "use server";
 
-import { auth, signIn, signOut } from "@/auth";
+import { signIn, signOut } from "@/auth";
 
 // Hai server action là lối vào xác thực DUY NHẤT của tầng UI. Không component
 // nào được import `signIn`/`signOut` trực tiếp: gom lại một chỗ thì đích
@@ -18,17 +18,27 @@ export async function signInWithGoogle() {
 }
 
 export async function signOutAction() {
-  // Kiểm tra lại `auth()` ngay trong action. Với riêng action này thì gần như
-  // vô nghĩa — đăng xuất khi chưa đăng nhập vốn vô hại. Nó ở đây để dựng khuôn
-  // mẫu: route guard trong src/proxy.ts KHÔNG bảo vệ server action, nên mỗi
-  // action phải tự xác thực. Các action của Phase 2 sẽ động tới tiền, và lúc đó
-  // khuôn mẫu này phải sẵn sàng chứ không phải mới đi phát hiện ra.
-  await auth();
-
-  // Không rẽ nhánh theo kết quả, và đó là chủ ý: người bị từ chối ở cổng
-  // allowlist chưa từng có session nào được tạo, nên ở màn hình /chua-duoc-moi
-  // `auth()` trả về null — nhưng đích đến vẫn y hệt. Đăng xuất khi chưa có
-  // session là no-op phía server; tác dụng thật là xóa cookie phía trình duyệt
-  // rồi đưa họ về chọn lại tài khoản, đúng việc họ muốn làm.
+  // CỐ TÌNH KHÔNG gọi `auth()` ở đây.
+  //
+  // Bản trước có `await auth();` rồi vứt kết quả đi, với lý do "dựng khuôn mẫu"
+  // cho các action tiền của Phase 2. Nhưng khuôn mẫu nó dựng lại là khuôn SAI:
+  // một lời gọi auth() không rẽ nhánh KHÔNG xác thực gì cả, trong khi trông
+  // hệt như có. Copy hình dạng đó sang một action chuyển tiền sẽ cho ra một
+  // đường ghi không cần đăng nhập mà vẫn đọc như đã được bảo vệ. Một auth() bị
+  // vứt đi dạy sai hiệu quả hơn là không gọi gì.
+  //
+  // Với riêng action này thì không cần thật: đăng xuất khi chưa đăng nhập vốn
+  // vô hại, và người bị từ chối ở cổng allowlist chưa từng có session nào —
+  // ở màn /chua-duoc-moi `auth()` trả null nhưng đích đến vẫn y hệt. Tác dụng
+  // thật là xóa cookie phía trình duyệt rồi đưa họ về chọn lại tài khoản.
+  //
+  // Khuôn mẫu cho Phase 2 là `requireUser()` trong src/lib/require-user.ts —
+  // nơi nó có tác dụng thật sự. Nó KHÔNG đặt trong file này vì file này mang
+  // "use server": mọi export ở đây đều thành một endpoint gọi được từ client,
+  // mà requireUser trả về đối tượng user — không nên phơi ra như vậy.
+  //
+  // Với `strategy: "database"`, signOut() xóa luôn dòng Session qua adapter
+  // (deleteSession), khóa theo session token đọc từ cookie của request — nên
+  // đăng xuất vô hiệu hóa ở cả phía server, không chỉ xóa cookie.
   await signOut({ redirectTo: "/dang-nhap" });
 }

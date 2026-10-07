@@ -35,7 +35,9 @@ describe("parseAllowlist", () => {
   });
 
   it("cắt khoảng trắng quanh cả mục lẫn nhãn", () => {
-    expect(parseAllowlist("  an@example.com  :  An  ,  binh@example.com ")).toEqual([
+    expect(
+      parseAllowlist("  an@example.com  :  An  ,  binh@example.com "),
+    ).toEqual([
       { email: "an@example.com", label: "An" },
       { email: "binh@example.com", label: null },
     ]);

@@ -10,6 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "format": "biome format --write",
     "test": "vitest run",
+    "guard:probe": "bash scripts/guard-probe.sh",
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {

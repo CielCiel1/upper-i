@@ -1,0 +1,35 @@
+# pnpm 12 blocks dependency build scripts by default and exits non-zero until each
+# one is explicitly allowed or denied. Every entry here is DENIED (`false`), never
+# allowed: nothing third-party executes at install time, which is the install-time
+# arbitrary-code-execution vector that threat T-01-SC is about.
+#
+# Denying is safe because none of these binaries actually come from their install
+# script — they ship in platform-specific optional packages that pnpm unpacks
+# directly. Verified after denying: `prisma --version` resolves its schema engine,
+# `tsx` runs (esbuild binary present), `vitest --version` runs.
+allowBuilds:
+  # scaffold defaults — neither package is a dependency of this project
+  sharp: false
+  unrs-resolver: false
+  # placing engine binaries; already unpacked from @prisma/engines platform package
+  "@prisma/engines": false
+  # prisma CLI preinstall-entry.js is an empty file in 7.10.0
+  prisma: false
+  # install.js downloads a binary that @esbuild/linux-x64 already provides
+  esbuild: false
+
+# pnpm 12 refuses to install any version published more recently than
+# `minimumReleaseAge` (default 24h), so a freshly-released version fails the
+# install outright. `next@16.4.0` and its `@next/*` platform packages were
+# published 2026-10-06 and are inside that window.
+#
+# The version is NOT negotiable — 16.4.0 is pinned by RESEARCH and carries the
+# `cacheComponents` behaviour the phase depends on — so the only options are
+# waiting out the clock or excluding these specific names. The exclusion is
+# scoped to the `next` package family by exact name; the delay policy stays
+# fully active for every other dependency, which is where the real risk lives.
+# These entries can be deleted once 16.4.0 ages past the window.
+minimumReleaseAgeExclude:
+  - next
+  - "@next/env"
+  - "@next/swc-*"

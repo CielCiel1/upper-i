@@ -20,7 +20,29 @@ import { isPlausibleEmail } from "@/lib/allowlist";
    address would ride along in the `Referer` header of any outbound request this page
    initiates. Phase 1 loads nothing third-party, so the exposure right now is zero —
    the policy is here so that a later phase adding an analytics script or an embedded
-   image to the shared layout cannot silently open the leak without noticing. */
+   image to the shared layout cannot silently open the leak without noticing.
+
+   SCOPE OF THIS MITIGATION, stated precisely. Putting the address in the URL exposes it
+   three ways: `Referer`, browser history, and server logs. `no-referrer` closes the
+   first one only.
+
+     - Browser history — the URL persists in the history of what may well be a shared
+       device. A referrer policy does nothing here.
+     - Server logs — Vercel logs request URLs including query strings, so the address
+       lands in log retention untouched.
+
+   The earlier wording called the two mitigations "mandatory" in a way that read as
+   covering the whole exposure; they cover one third of it. The decision to show the
+   address is still right — it is the user's own address, returned to them, and the
+   overwhelming real cause of a rejection is tapping the wrong one of several Google
+   accounts already signed in on the phone. What was wrong was describing the
+   mitigation as complete.
+
+   Closing the other two means not putting the address in the URL at all: redirect with
+   no query string and carry the address in a short-lived HttpOnly cookie read
+   server-side. Deferred, with the reasoning recorded in deferred-items.md, because it
+   changes the (marker, email) entry contract this page shares with the signIn callback
+   and that is not a change to make while fixing a review. */
 export const metadata: Metadata = {
   referrer: "no-referrer",
 };

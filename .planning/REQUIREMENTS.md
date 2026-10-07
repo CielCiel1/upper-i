@@ -11,11 +11,11 @@ Requirements LEDG-01..07 and MONEY-01..06 exist specifically to make this imposs
 
 ### Nền tảng & Triển khai (INFRA)
 
-- [ ] **INFRA-01**: App chạy trên Next.js App Router với TypeScript strict mode, Prisma pinned ở v7 (không để npm kéo v8-rc)
+- [x] **INFRA-01**: App chạy trên Next.js App Router với TypeScript strict mode, Prisma pinned ở v7 (không để npm kéo v8-rc)
 - [ ] **INFRA-02**: Dev chạy được local với Neon connection string, không cần Docker
-- [ ] **INFRA-03**: Mỗi lần `git push` lên nhánh chính tự deploy ra production URL trên Vercel, không thao tác tay
-- [ ] **INFRA-04**: Prisma migration chạy tự động khi deploy; schema production luôn khớp code
-- [ ] **INFRA-05**: Toàn bộ dịch vụ nằm trong tầng miễn phí; chi phí thực tế 0đ/tháng
+- [x] **INFRA-03**: Mỗi lần `git push` lên nhánh chính tự deploy ra production URL trên Vercel, không thao tác tay
+- [x] **INFRA-04**: Prisma migration chạy tự động khi deploy; schema production luôn khớp code
+- [x] **INFRA-05**: Toàn bộ dịch vụ nằm trong tầng miễn phí; chi phí thực tế 0đ/tháng
 - [ ] **INFRA-06**: Kết nối DB dùng pooled connection string + Neon adapter, không cạn connection khi nhiều function chạy song song
 - [ ] **INFRA-07**: App shell render tĩnh nên người dùng thấy giao diện ngay cả khi Neon compute đang resume
 
@@ -150,11 +150,11 @@ Mapped by `ROADMAP.md` — 64/64 v1 requirements covered, no orphans, no duplica
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| INFRA-01 | Phase 1 — Nền tảng sống | Pending |
+| INFRA-01 | Phase 1 — Nền tảng sống | Complete |
 | INFRA-02 | Phase 1 — Nền tảng sống | Pending |
-| INFRA-03 | Phase 1 — Nền tảng sống | Pending |
-| INFRA-04 | Phase 1 — Nền tảng sống | Pending |
-| INFRA-05 | Phase 1 — Nền tảng sống | Pending |
+| INFRA-03 | Phase 1 — Nền tảng sống | Complete |
+| INFRA-04 | Phase 1 — Nền tảng sống | Complete |
+| INFRA-05 | Phase 1 — Nền tảng sống | Complete |
 | INFRA-06 | Phase 1 — Nền tảng sống | Pending |
 | INFRA-07 | Phase 1 — Nền tảng sống | Pending |
 | AUTH-01 | Phase 1 — Nền tảng sống | Pending |

@@ -50,10 +50,11 @@ Ledger là Phase 2 vì nó là lý do viết lại. Bản Apps Script không ch�
 **Depends on:** Nothing (first phase)
 **Requirements:** INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05, INFRA-06, INFRA-07, AUTH-01, AUTH-02, AUTH-03, AUTH-06
 
-**Plans:** 6 plans
+**Plans:** 1/6 plans executed
 
 Plans:
-- [ ] 01-01-PLAN.md — Scaffold + pin versions + cấu hình deploy (INFRA-01, INFRA-03, INFRA-04, INFRA-05)
+
+- [x] 01-01-PLAN.md — Scaffold + pin versions + cấu hình deploy (INFRA-01, INFRA-03, INFRA-04, INFRA-05)
 - [ ] 01-02-PLAN.md — Schema, Prisma/Neon adapter, seed allowlist có thẩm quyền (INFRA-02, INFRA-06, AUTH-02)
 - [ ] 01-03-PLAN.md — Design token + app shell tĩnh (INFRA-07)
 - [ ] 01-04-PLAN.md — Google OAuth, allowlist gate, route guard `src/proxy.ts` (AUTH-01, AUTH-02, AUTH-03, AUTH-06)
@@ -65,6 +66,7 @@ Plans:
 > **Lệch so với bản phác 5 plan ban đầu — có chủ đích.** Research (đã dựng thử và build thật) cho thấy hai giả định gốc không còn đúng: việc tạo project Vercel/Neon là thao tác tay của người dùng chứ không phải việc agent làm được, nên không thể là "plan" song song; và phần cấu hình deploy thuần code (`vercel.json`, build command) thực chất thuộc về plan scaffold. Vì vậy Plan 3 cũ được tách: phần code gộp vào Plan 01, phần thao tác tay dồn vào Plan 06 cùng mọi bước tay khác — đúng yêu cầu CONTEXT.md là gom tất cả vào **một** checklist liền mạch. Plan 03 mới tách riêng token/shell khỏi các trang vì token system là deliverable dùng cho cả 9 phase.
 
 **Success criteria:**
+
 1. Mở URL `*.vercel.app` trên điện thoại, bấm "Đăng nhập với Google" một chạm, vào được trang hiện tên mình.
 2. Một email ngoài allowlist bấm đăng nhập thì bị từ chối, không tạo tài khoản.
 3. Thêm một thành viên mới = một dòng INSERT vào DB, người đó đăng nhập được ngay mà không cần deploy lại.
@@ -86,6 +88,7 @@ Plans:
 > **Đây là phase biện minh cho cả cuộc viết lại.** Bản cũ chết vì hai nguồn sự thật. Mọi thứ ở đây tồn tại để làm cho lỗi đó *không biểu diễn được*.
 
 **Plans:**
+
 1. **Schema ledger append-only** — bảng entry với cột `BIGINT`, cộng **trigger Postgres chặn UPDATE/DELETE** (bất biến ép ở DB, không ở quy ước — quy ước chính là thứ đã thất bại ở bản Apps Script); unique index trên idempotency key. (LEDG-01, LEDG-05, MONEY-01)
 2. **`splitByWeights` + property tests** — một hàm duy nhất phục vụ chia đều / theo phần / theo phần trăm, dùng largest-remainder; tie-break tất định không phụ thuộc thứ tự truy vấn; guard tràn trên tích trung gian `total * weight`; test fast-check cho cả ba kiểu chia. (MONEY-02, MONEY-03, MONEY-04, MONEY-06)
 3. **Bút toán đảo** — reversal **phủ định đúng các dòng entry đã lưu, KHÔNG tính lại phép chia**; dòng gốc giữ nguyên để truy vết. (LEDG-03, LEDG-04)
@@ -97,6 +100,7 @@ Plans:
 > ⚠️ **Phát hiện nghiên cứu quyết định (money-ledger.md §3):** `split(−t, w)` **không** bằng phủ định từng phần tử của `split(t, w)` — lệch ở 9.216/50.000 trường hợp (~18%). Cả hai đều tổng bằng 0, nên **mọi kiểm tra số dư đều không thấy lỗi này**. Nếu reversal tính lại phép chia thay vì phủ định dòng đã lưu, drift của bản cũ tái sinh ở dạng vô hình. Đây cũng là lý do phải lưu từng leg tường minh.
 
 **Success criteria:**
+
 1. Ghi một khoản chi 100.000 ₫ chia đều cho 3 người → các phần là 33.334 / 33.333 / 33.333, tổng đúng 100.000, không mất đồng nào.
 2. Số dư của mọi người cộng lại luôn bằng 0, kiểm chứng trên hàng nghìn kịch bản sinh ngẫu nhiên.
 3. Đảo một khoản chi đưa số dư mọi người về đúng y như trước khi ghi, không lệch một đồng.
@@ -116,6 +120,7 @@ Plans:
 **Requirements:** EXP-01, EXP-02, EXP-03, EXP-04, EXP-05, EXP-09, EXP-10, UX-01, UX-02, UX-03, UX-04, UX-05, UX-06
 
 **Plans:**
+
 1. **PWA shell + tab bar** — manifest + icon + tên riêng để cài lên màn hình chính; thanh tab dưới: Số dư / Lịch sử / Nhóm; safe area cho máy tai thỏ; vùng chạm ≥ 44×44px. (UX-01, UX-02, UX-04, UX-05)
 2. **FAB + bottom sheet** — nút thêm chi tiêu hiện trên mọi tab, mở dạng bottom sheet không chuyển trang. (EXP-10)
 3. **Ô nhập tiền** — `type="text"` + `inputMode="numeric"` (**không** `type="number"`), font ≥ 16px để iOS không tự phóng, autofocus, chèn dấu phân cách hàng nghìn mà không nhảy con trỏ. (EXP-02, UX-03)
@@ -125,6 +130,7 @@ Plans:
 **Parallel:** Plan 1 trước. Plan 2, 3, 4 chạy song song sau đó. Plan 5 cuối.
 
 **Success criteria:**
+
 1. Người dùng cài app lên màn hình chính điện thoại, mở ra thấy icon và tên riêng, không thấy thanh địa chỉ trình duyệt.
 2. Bấm nút thêm từ bất kỳ tab nào → bottom sheet mở, bàn phím số đã bật, con trỏ đã nằm trong ô tiền, không mất một chạm nào để tới đó.
 3. Ghi xong một khoản chi chia đều cho cả nhóm trong dưới 15 giây, đo bằng đồng hồ trên điện thoại thật.
@@ -145,6 +151,7 @@ Plans:
 **Requirements:** BAL-01, BAL-02, BAL-03, BAL-04, EXP-06, EXP-07, EXP-08
 
 **Plans:**
+
 1. **Màn Số dư dạng câu** — "Bạn đang nợ 150.000 ₫" / "Bạn được nhận 80.000 ₫", đỏ = nợ, xanh = được nợ, nhất quán; tránh hẳn từ "số dư ròng". (BAL-01)
 2. **Chi tiết theo người + truy vết** — nhóm theo chiều nợ/được nợ; mở một khoản nợ ra xem đúng những chi tiêu nào cấu thành nó. (BAL-02, BAL-03)
 3. **Chia theo phần không bằng nhau** — UI chọn số phần (A 2 phần, B 1 phần), gọi thẳng `splitByWeights` của Phase 2, không công thức mới. (EXP-06)
@@ -154,6 +161,7 @@ Plans:
 **Parallel:** Plan 1 → Plan 2. Plan 3, 4, 5 chạy song song với nhau và với Plan 2.
 
 **Success criteria:**
+
 1. Mở app, câu đầu tiên nhìn thấy nói rõ mình đang nợ hay được nhận bao nhiêu — không phải một con số có dấu âm/dương để tự suy.
 2. Chạm vào tên một người thấy đúng danh sách chi tiêu cấu thành khoản nợ với người đó.
 3. Chia một khoản 100.000 ₫ theo tỷ lệ 2:1 cho hai người ra 66.667 / 33.333, tổng đúng 100.000.
@@ -173,6 +181,7 @@ Plans:
 **Requirements:** AUTH-04, AUTH-05, PAY-01, PAY-02, PAY-03, PAY-04
 
 **Plans:**
+
 1. **Tab Nhóm + hồ sơ cá nhân** — danh sách thành viên; tự sửa tên hiển thị và ảnh đại diện; chứng minh `User.id` mới là danh tính, đổi tên không chạm dòng ledger lịch sử nào. (AUTH-04, AUTH-05)
 2. **Thông tin ngân hàng** — chọn ngân hàng từ danh sách BIN Việt Nam có sẵn + nhập số tài khoản. ⚠️ Validation **không** được giả định `^9704\d{2}$`: CAKE là `546034`, Timo là `963388`. (PAY-01)
 3. **Payload VietQR EMVCo** — dựng TLV tự thân + CRC16-CCITT (FALSE); tag `01` = `12` khi có số tiền, `11` khi không; **không** lưu `accountName` vào payload (xác minh: nó không nằm trong chuẩn, ngân hàng tự hiện tên chủ tài khoản). (PAY-02)
@@ -182,6 +191,7 @@ Plans:
 **Parallel:** Plan 1 và Plan 2 song song. Plan 3 → Plan 4. Plan 5 song song với Plan 3.
 
 **Success criteria:**
+
 1. Người dùng lưu được ngân hàng + số tài khoản của mình bằng cách chọn từ danh sách, không phải gõ mã BIN.
 2. Quét mã QR trong app bằng app ngân hàng thật → màn hình chuyển tiền mở ra với đúng người nhận, đúng số tiền, đúng nội dung, không phải gõ gì thêm.
 3. Người dùng đổi tên hiển thị của mình, mọi khoản chi lịch sử vẫn gắn đúng người và số dư không đổi một đồng.
@@ -201,6 +211,7 @@ Plans:
 **Requirements:** PAY-05, PAY-06, PAY-07, PAY-08, PAY-09, PAY-10, PAY-11, PAY-12
 
 **Plans:**
+
 1. **Thanh toán trạng thái chờ** — bấm "đã chuyển" tạo một payment `pending` ở bảng riêng; **pending tuyệt đối không ghi ledger, không đổi số dư của ai**. (PAY-05, PAY-06)
 2. **Người nhận xác nhận** — danh sách chờ xác nhận; bấm "đã nhận" là thời điểm **duy nhất** ledger được ghi, qua idempotency key của Phase 2. (PAY-07)
 3. **Từ chối & huỷ** — người nhận từ chối kèm lý do; người trả tự huỷ được khi chưa ai xác nhận. (PAY-08, PAY-09)
@@ -210,6 +221,7 @@ Plans:
 **Parallel:** Plan 1 → Plan 2 → Plan 3. Plan 4 song song với Plan 3. Plan 5 độc lập hoàn toàn, chạy song song từ đầu phase.
 
 **Success criteria:**
+
 1. Người trả bấm "đã chuyển" → số dư của cả hai bên **không đổi**, chỉ xuất hiện badge "đang chờ xác nhận".
 2. Người nhận bấm "đã nhận" → ngay lúc đó số dư hai bên mới thay đổi và tổng mọi số dư vẫn bằng 0.
 3. Người nhận từ chối kèm lý do → người trả thấy lý do và số dư không hề bị động đến.
@@ -229,6 +241,7 @@ Plans:
 **Requirements:** HIST-01, HIST-02, HIST-03, HIST-04, HIST-05, HIST-06
 
 **Plans:**
+
 1. **Dòng thời gian** — tab Lịch sử, mới nhất trước, cuộn vô hạn. (HIST-01)
 2. **Bộ lọc** — theo người và theo khoảng thời gian. (HIST-02)
 3. **Tổng kết tháng** — tổng chi, chi theo người, chi theo nội dung. (HIST-03)
@@ -240,6 +253,7 @@ Plans:
 > ⚠️ Đây chính là chỗ bản cũ chết (`actionStartNewPeriod` archive nhưng không reset → kỳ mới cộng dồn kỳ cũ). Nguyên nhân gốc là **coi chốt kỳ là một thao tác lên dữ liệu**. Ở đây close là một timestamp, nên double-count không phải lỗi phải tránh — nó không biểu diễn được.
 
 **Success criteria:**
+
 1. Cuộn lịch sử thấy mọi giao dịch mới nhất trước, cuộn tiếp tự tải thêm, không mất dòng nào.
 2. Lọc theo một người trong một tháng → chỉ hiện đúng giao dịch của người đó trong tháng đó.
 3. Chốt kỳ xong: không một giao dịch nào biến mất khỏi lịch sử.
@@ -259,6 +273,7 @@ Plans:
 **Requirements:** ITEM-01, ITEM-02, ITEM-03, ITEM-04
 
 **Plans:**
+
 1. **Nhập hoá đơn nhiều dòng** — mỗi dòng có tên món, số lượng, đơn giá; thêm/xoá dòng nhanh trên điện thoại. (ITEM-01)
 2. **Gán người ăn từng dòng** — mỗi dòng gán độc lập, mặc định cả nhóm, bỏ người bằng một chạm. (ITEM-02)
 3. **Phân bổ ship + VAT** — gộp thành **một lần phân bổ duy nhất** theo tỷ lệ tiền món của từng người (phân bổ hai lần liên tiếp làm dồn lệch). (ITEM-03)
@@ -267,6 +282,7 @@ Plans:
 **Parallel:** Plan 1 → Plan 2. Plan 3 song song với Plan 2. Plan 4 cuối.
 
 **Success criteria:**
+
 1. Nhập một hoá đơn 5 món với ship và VAT, gán người ăn khác nhau cho từng món, và lưu được thành một khoản chi.
 2. Cộng phần của tất cả mọi người lại đúng bằng tổng hoá đơn in trên giấy — không thừa không thiếu một đồng.
 3. Người không ăn món nào chỉ phải trả 0 ₫, không bị chia ship.
@@ -289,6 +305,7 @@ Plans:
 > Lưu ý cần quyết trong AI-SPEC: free-tier Gemini **dùng input để train model của Google** — ảnh hoá đơn là dữ liệu thật của nhóm, phải công bố rõ hoặc chấp nhận có ý thức.
 
 **Plans:**
+
 1. **Chụp & nén phía client** — mở camera từ app; nén ảnh trên máy trước khi gửi để **không vượt giới hạn body 4.5 MB của server action**. (OCR-01, OCR-02)
 2. **Lưu trữ Vercel Blob** — upload và xem lại ảnh từ giao dịch; adapter hoá để đổi nhà cung cấp sau chỉ là đổi một lớp. (OCR-03)
 3. **Trích xuất có cấu trúc** — gọi model sinh danh sách món / số lượng / đơn giá / tổng tiền theo schema cố định. (OCR-04)
@@ -298,6 +315,7 @@ Plans:
 **Parallel:** Plan 1 → Plan 2. Plan 3 song song với Plan 2. Plan 4 cần Plan 3. Plan 5 cuối.
 
 **Success criteria:**
+
 1. Người dùng chụp một hoá đơn thật ở quán và thấy danh sách món đã điền sẵn, không phải gõ dòng nào từ đầu.
 2. Ảnh 12 MP từ điện thoại gửi lên thành công, không lỗi "body too large".
 3. Trong lúc ảnh đang xử lý, app vẫn dùng được bình thường; xong thì báo.
@@ -379,25 +397,31 @@ Plans:
 ## Risks
 
 ### 1. `npm i prisma` kéo về v8.0.0-rc — build gãy ngay Phase 1 🔴
+
 `prisma` trên npm hiện resolve sang **8.0.0-rc.20** trong khi `@prisma/client` latest là **7.10.0**. Hai gói lệch major thì build chết, và thông báo lỗi không nói gì về version. Research gọi đây là **lỗi setup khả dĩ nhất**.
 **Giảm thiểu:** Phase 1 / Plan 1 pin **exact version** (không caret) cho cả `prisma` và `@prisma/client`; commit lockfile; dựng được production build trước khi viết dòng nghiệp vụ nào.
 
 ### 2. Reversal tính lại phép chia → drift vô hình 🔴
+
 `split(−t, w) ≠ −split(t, w)` ở ~18% trường hợp (9.216/50.000). Cả hai cách **đều tổng bằng 0**, nên LEDG-06 (tổng số dư = 0) **vẫn pass** trong khi số tiền từng người đã sai. Đây đúng là loại lỗi đã giết bản Apps Script, chỉ ở dạng khó thấy hơn.
 **Giảm thiểu:** Phase 2 / Plan 3 phủ định **dòng entry đã lưu**, không bao giờ gọi lại hàm chia. LEDG-07 (expense + reversal → trạng thái trước đó) là test duy nhất bắt được lỗi này — nó không thể bị bỏ qua hay hoãn.
 
 ### 3. `BigInt` vỡ ở ranh giới RSC / server action 🟠
+
 Prisma `BigInt` làm `JSON.stringify` ném `Do not know how to serialize a BigInt`. Next.js serialize **tự động** ở ranh giới server→client, nên lỗi này nổ rải rác ở từng route nếu vá theo từng chỗ.
 **Giảm thiểu:** Phase 2 / Plan 4 chuyển đổi tại **tầng repository**, một chỗ duy nhất. Thêm một smoke test gọi qua server action thật ngay trong Phase 2, không đợi tới khi có UI.
 
 ### 4. NextAuth v5 còn beta + Next.js 16 đổi `middleware.ts` → `proxy.ts` 🟠
+
 `next-auth@5.0.0-beta.32` đã từng ship breaking change giữa các bản beta. Song song, Next.js 16 đổi tên `middleware.ts` thành `proxy.ts` — **gần như mọi tutorial tìm được đều sai chỗ này**, và triệu chứng là route guard im lặng không chạy (ai cũng vào được, không báo lỗi).
 **Giảm thiểu:** pin exact beta version; Phase 1 / Plan 4 viết guard trong `proxy.ts` và **test bằng một email ngoài allowlist** để chứng minh guard thật sự chặn. Mặt lợi: `proxy.ts` chạy Node runtime nên Prisma dùng được trực tiếp.
 
 ### 5. Giới hạn độ dài nội dung chuyển khoản không có tài liệu công khai 🟡
+
 Không ngân hàng nào công bố cap chính xác cho memo; khoảng 50–160 là phỏng đoán. Memo bị cắt cụt thì token đối soát mất, người nhận không biết tiền của ai.
 **Giảm thiểu:** Phase 5 / Plan 5 giữ ngân sách **~25 ký tự** (bảo thủ có chủ đích), chỉ `A–Z 0–9` + dấu cách, không dấu tiếng Việt. **Test thật với 2–3 ngân hàng khác nhau ngay trong Phase 5**, không hoãn. Luồng xác nhận hai chiều của Phase 6 là lưới an toàn: memo hỏng vẫn còn người xác nhận bằng tay.
 
 ### 6. Region lệch: Vercel mặc định `iad1`, Neon ở Singapore 🟡
+
 Để mặc định thì mỗi truy vấn đi vòng Washington DC ↔ Singapore, cộng ~250ms **mỗi query** cho người dùng Việt Nam — đủ phá vỡ mục tiêu 15 giây của Phase 3, và biểu hiện ra như "app chậm" chứ không như một lỗi cấu hình.
 **Giảm thiểu:** Phase 1 đặt Neon `ap-southeast-1` **và** Vercel function region `sin1`; ghi lại thành decision để lần tạo project sau không quên.

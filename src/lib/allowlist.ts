@@ -55,6 +55,30 @@ export function isPlausibleEmail(value: string): boolean {
  * @throws khi giá trị thô vắng mặt hoặc phân tích ra không mục nào — seed một
  * allowlist rỗng sẽ khóa mọi thành viên ra khỏi app, nên nó phải hỏng ầm ĩ.
  */
+/**
+ * Chọn ra id của những user KHÔNG còn trong allowlist — tức là những người phải
+ * bị thu hồi session.
+ *
+ * Hàm thuần, tách khỏi prisma/seed.ts để kiểm chứng được mà không cần database
+ * thật. Đây là phép nối hai chặng Allowlist → User → Session: Allowlist khóa
+ * theo email, Session khóa theo userId, nên bắt buộc phải đi qua User.
+ *
+ * Phép so khớp đi qua ĐÚNG hàm normalizeEmail mà phía allowlist dùng. Trước đây
+ * seed tự gọi `.toLowerCase()` — thiếu `.trim()` so với normalizeEmail — nên
+ * một User.email mang khoảng trắng hai đầu (nó đến thẳng từ nhà cung cấp OAuth
+ * và cố ý không được ta chuẩn hóa) không khớp chính dòng allowlist của mình, và
+ * một thành viên hợp lệ bị xóa sạch session trong im lặng.
+ */
+export function selectRemovedUserIds(
+  users: readonly { id: string; email: string | null }[],
+  allowedEmails: readonly string[],
+): string[] {
+  const allowed = new Set(allowedEmails);
+  return users
+    .filter((user) => !allowed.has(normalizeEmail(user.email ?? "")))
+    .map((user) => user.id);
+}
+
 export function parseAllowlist(raw: string | undefined): AllowlistEntry[] {
   if (raw === undefined) {
     throw new Error(

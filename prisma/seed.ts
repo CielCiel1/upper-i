@@ -15,7 +15,7 @@
 import "dotenv/config";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../src/generated/prisma/client";
-import { parseAllowlist } from "../src/lib/allowlist";
+import { parseAllowlist, selectRemovedUserIds } from "../src/lib/allowlist";
 
 // Seed chạy DDL-adjacent và là tiến trình tsx độc lập ngoài runtime của Next,
 // nên nó tự dựng client thay vì dùng singleton của app. Ưu tiên chuỗi direct:
@@ -73,14 +73,24 @@ async function main() {
       // mà không cần database thật. Nếu `mode` lặng lẽ không áp dụng cho `notIn`,
       // thành viên bị gỡ có email lệch hoa thường sẽ giữ nguyên session — đúng
       // kiểu hỏng âm thầm mà bước này sinh ra để chặn.
-      const allowed = new Set(emails);
       const users = await tx.user.findMany({
         where: { email: { not: null } },
         select: { id: true, email: true },
       });
-      const removedUserIds = users
-        .filter((user) => !allowed.has((user.email ?? "").toLowerCase()))
-        .map((user) => user.id);
+      // Phép chọn nằm ở src/lib/allowlist.ts: hàm thuần, kiểm chứng được mà
+      // không cần database thật — và nó là phép tính quyết định ai bị xóa
+      // session, nên nó phải có test.
+      //
+      // Nó dùng CHUNG normalizeEmail với phía allowlist thay vì tự gọi
+      // `.toLowerCase()`. Hai bên từng lệch nhau đúng một thao tác: allowlist
+      // chuẩn hóa bằng `.trim().toLowerCase()`, còn chỗ này chỉ hạ chữ.
+      // User.email đến thẳng từ nhà cung cấp OAuth và cố ý KHÔNG được ta chuẩn
+      // hóa (xem ghi chú ngay trên), nên một địa chỉ mang khoảng trắng hai đầu
+      // không khớp chính dòng allowlist của nó — thành viên hợp lệ bị xếp vào
+      // nhóm "đã gỡ" và bị xóa sạch session. Họ đăng nhập lại được vì dòng
+      // Allowlist vẫn còn, nhưng bị đăng xuất trong im lặng và con số
+      // revokedSessions in ra trông vẫn hợp lý.
+      const removedUserIds = selectRemovedUserIds(users, emails);
 
       const revoked = await tx.session.deleteMany({
         where: { userId: { in: removedUserIds } },

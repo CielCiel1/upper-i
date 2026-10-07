@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isPlausibleEmail, normalizeEmail, parseAllowlist } from "./allowlist";
+import {
+  isPlausibleEmail,
+  normalizeEmail,
+  parseAllowlist,
+  selectRemovedUserIds,
+} from "./allowlist";
 
 describe("parseAllowlist", () => {
   it("tách danh sách phân cách bằng dấu phẩy thành từng mục", () => {
@@ -146,6 +151,47 @@ describe("normalizeEmail", () => {
   it("quy một địa chỉ hoa-thường lẫn lộn về đúng giá trị mà seed lưu", () => {
     const seeded = parseAllowlist("An.Nguyen@Example.COM")[0]?.email;
     expect(normalizeEmail("  AN.NGUYEN@example.com ")).toBe(seeded);
+  });
+});
+
+describe("selectRemovedUserIds (HI-01)", () => {
+  const allowed = ["an@example.com", "binh@example.com"];
+
+  it("chọn đúng user không còn trong allowlist", () => {
+    const users = [
+      { id: "u1", email: "an@example.com" },
+      { id: "u2", email: "khach@other.com" },
+    ];
+    expect(selectRemovedUserIds(users, allowed)).toEqual(["u2"]);
+  });
+
+  /* HỒI QUY CHO HI-01. Phiên bản cũ gọi `.toLowerCase()` trần, thiếu `.trim()`
+   * so với normalizeEmail. User.email đến thẳng từ nhà cung cấp OAuth và cố ý
+   * không được ta chuẩn hóa, nên một địa chỉ mang khoảng trắng hai đầu không
+   * khớp chính dòng allowlist của mình: thành viên hợp lệ bị xếp vào nhóm "đã
+   * gỡ" và mất sạch session, trong im lặng, với con số báo cáo trông vẫn đúng. */
+  it("KHÔNG gỡ thành viên hợp lệ có email mang khoảng trắng hai đầu", () => {
+    const users = [{ id: "u1", email: "  an@example.com  " }];
+    expect(selectRemovedUserIds(users, allowed)).toEqual([]);
+  });
+
+  it("KHÔNG gỡ thành viên hợp lệ có email viết hoa", () => {
+    const users = [{ id: "u1", email: "AN@EXAMPLE.COM" }];
+    expect(selectRemovedUserIds(users, allowed)).toEqual([]);
+  });
+
+  it("chuẩn hóa giống hệt phía allowlist", () => {
+    const seeded = parseAllowlist("An.Nguyen@Example.COM").map((e) => e.email);
+    const users = [{ id: "u1", email: " An.Nguyen@Example.COM " }];
+    expect(selectRemovedUserIds(users, seeded)).toEqual([]);
+  });
+
+  /* Mặt còn lại: thu hồi vẫn phải hoạt động. Seed có thẩm quyền, và việc nó
+   * xóa thành viên đã bị gỡ là điều phải giữ — sửa HI-01 không được làm nhẹ
+   * tay chuyện đó. */
+  it("vẫn gỡ user có email null", () => {
+    const users = [{ id: "u1", email: null }];
+    expect(selectRemovedUserIds(users, allowed)).toEqual(["u1"]);
   });
 });
 

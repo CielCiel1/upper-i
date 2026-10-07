@@ -34,3 +34,6 @@ yarn-error.log*
 
 # test
 coverage/
+
+# prisma client sinh tự động mỗi lần build, không commit
+/src/generated

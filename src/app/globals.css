@@ -1,1 +1,217 @@
 @import "tailwindcss";
+
+/* ---- Font family must be `inline` — it references next/font's generated variable ---- */
+@theme inline {
+  --font-sans:
+    var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+}
+
+@theme {
+  /* ---------- Typography ---------- */
+  /* `--text-*` with a `--line-height` pair sets size + leading together */
+  --text-display: 2rem; /* 32px */
+  --text-display--line-height: 1.3;
+  --text-display--font-weight: 600;
+
+  --text-heading: 1.25rem; /* 20px */
+  --text-heading--line-height: 1.35;
+  --text-heading--font-weight: 600;
+
+  --text-body: 1rem; /* 16px */
+  --text-body--line-height: 1.5;
+
+  --text-label: 0.875rem; /* 14px */
+  --text-label--line-height: 1.4;
+  --text-label--font-weight: 600;
+
+  /* Same size/leading as label, weight 400. A separate token so captions never need
+     `font-normal` to undo a baked 600 — see "Why Caption is its own token". */
+  --text-caption: 0.875rem; /* 14px */
+  --text-caption--line-height: 1.4;
+  --text-caption--font-weight: 400;
+
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+
+  /* ---------- Spacing (4px base; v4 generates all multiples) ---------- */
+  --spacing: 0.25rem;
+
+  /* ---------- Radii ---------- */
+  --radius-control: 0.5rem; /* 8px  */
+  --radius-card: 0.75rem; /* 12px */
+  --radius-sheet: 1rem; /* 16px */
+
+  /* ---------- Shadows ---------- */
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.06);
+  --shadow-sheet: 0 -2px 16px 0 rgb(0 0 0 / 0.1);
+  --shadow-fab: 0 2px 8px 0 rgb(0 0 0 / 0.16);
+
+  /* ---------- Colour — LIGHT (semantic only; never raw palette names) ---------- */
+  --color-surface: #fafaf9;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #f5f5f4;
+  --color-border: #e7e5e4;
+  --color-border-strong: #d6d3d1;
+
+  --color-ink: #1c1917;
+  --color-ink-soft: #44403c;
+  --color-ink-muted: #78716c;
+
+  --color-accent: #0f766e;
+  --color-accent-hover: #115e59;
+  --color-on-accent: #ffffff;
+
+  --color-positive: #047857; /* "được nhận" — replaces legacy #059669 (failed AA at 3.61) */
+  --color-negative: #b91c1c; /* "đang nợ"   — replaces legacy #DC2626 (thin margin)        */
+
+  --color-destructive: #b91c1c;
+  --color-on-destructive: #ffffff;
+
+  --color-focus: #0f766e;
+
+  /* ---------- Motion ---------- */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-skeleton: skeleton 1.4s ease-in-out infinite;
+
+  @keyframes skeleton {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.55;
+    }
+  }
+}
+
+/* ---- Dark mode: reassign the SAME semantic tokens. No component changes. ---- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: #0c0a09;
+    --color-surface-raised: #1c1917;
+    --color-surface-sunken: #0c0a09;
+    --color-border: #292524;
+    --color-border-strong: #44403c;
+
+    --color-ink: #fafaf9;
+    --color-ink-soft: #d6d3d1;
+    --color-ink-muted: #a8a29e;
+
+    --color-accent: #2dd4bf;
+    --color-accent-hover: #5eead4;
+    --color-on-accent: #0c0a09;
+
+    --color-positive: #34d399;
+    --color-negative: #fca5a5;
+
+    --color-destructive: #f87171;
+    --color-on-destructive: #0c0a09;
+
+    --color-focus: #2dd4bf;
+
+    /* Shadows don't read on near-black; depth comes from surface-raised being lighter */
+    --shadow-card: none;
+    --shadow-sheet: 0 -2px 16px 0 rgb(0 0 0 / 0.4);
+  }
+}
+
+/* ---------- Base ---------- */
+:root {
+  color-scheme: light dark; /* native controls, scrollbars, URL bar follow the theme */
+
+  /* Safe-area tokens — plain CSS vars, not @theme (they're dynamic, not utility-generating) */
+  --shell-gutter: max(1rem, env(safe-area-inset-left));
+  --shell-safe-top: env(safe-area-inset-top);
+  --shell-safe-bottom: max(1rem, env(safe-area-inset-bottom));
+
+  /* CONTENT box heights — the usable area, EXCLUDING any safe-area inset.
+     Bars compose these with the inset via calc(); they never absorb it. */
+  --shell-header-content: 3.5rem; /* 56px — clears the 44px touch minimum */
+  --shell-tabbar-content: 0px; /* Phase 3 sets this to 3.5rem (56px) */
+
+  /* Total occupied height, inset included. Layout padding uses THESE. */
+  --shell-tabbar-height: calc(
+    var(--shell-tabbar-content) +
+    var(--shell-safe-bottom)
+  );
+
+  --size-touch-min: 44px;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* HARD RULE: iOS Safari zooms the viewport on focus below 16px. No exceptions. */
+  input,
+  select,
+  textarea {
+    font-size: max(1rem, 16px);
+  }
+
+  /* Focus: visible, offset, never removed. :focus-visible = keyboard only, no mouse halo. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-control);
+  }
+
+  /* Respect reduced-motion globally — skeletons and transitions both.
+     `!important` is load-bearing here and must not be removed: this rule lives in
+     `@layer base`, the lowest-precedence layer, so without it any Tailwind utility
+     or component-layer animation would win the cascade and keep animating for a
+     user who asked the OS to stop motion (WCAG 2.3.3). */
+  @media (prefers-reduced-motion: reduce) {
+    /* biome-ignore-start lint/complexity/noImportantStyles: must override utility-layer animations */
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    /* biome-ignore-end lint/complexity/noImportantStyles: must override utility-layer animations */
+  }
+}
+
+@layer components {
+  /* Every rendered VND amount uses this. Inter exposes `tnum` (verified). */
+  .money {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings:
+      "tnum" 1,
+      "lnum" 1;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  /* Loading placeholder. The 150ms delay plus `opacity: 0` + `forwards` means content
+     that arrives in under ~150ms never flashes a placeholder — a skeleton that appears
+     and vanishes inside a frame or two reads as a glitch, not as loading.
+     Callers size this in `em` inside a type-token wrapper, never with an `h-*` class. */
+  .skeleton {
+    background-color: var(--color-surface-sunken);
+    border-radius: var(--radius-control);
+    animation: var(--animate-skeleton);
+    animation-delay: 150ms;
+    opacity: 0;
+    animation-fill-mode: forwards;
+  }
+}
+
+/* Users who asked the OS for more contrast: lift muted text off the 4.5:1 AA floor.
+   NOTE: this is a legibility enhancement only. It is NOT the colour-blindness
+   accommodation — no media query detects CVD. That is handled unconditionally by the
+   word/grouping/shape encoding, which is always on. */
+@media (prefers-contrast: more) {
+  :root {
+    --color-ink-muted: var(--color-ink-soft); /* 4.59:1 -> 9.84:1 */
+    --color-border: var(--color-border-strong);
+  }
+}

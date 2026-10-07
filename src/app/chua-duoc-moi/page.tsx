@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Card } from "@/components/ui/card";
+import { isPlausibleEmail } from "@/lib/allowlist";
 
 /* UI-SPEC "Screen 2". The rejection screen.
 
@@ -38,7 +39,13 @@ function plausibleEmail(raw: string | string[] | undefined): string | null {
   if (typeof raw !== "string") return null;
   const value = raw.trim();
   if (value.length === 0 || value.length > 254) return null;
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return null;
+
+  /* Dùng CHUNG định nghĩa với allowlist thay vì giữ một regex riêng ở đây.
+     Trước đây hai đầu bất đồng về "cái gì là email": allowlist không áp hình
+     dạng nào cả, nên tồn tại địa chỉ vừa là thành viên hợp lệ vừa bị trang này
+     từ chối, và người đó thấy câu chữ xuống cấp "Tài khoản này…" thay vì địa
+     chỉ của chính mình. Cùng kiểu trôi lệch mà normalizeEmail sinh ra để ngăn. */
+  if (!isPlausibleEmail(value)) return null;
   return value;
 }
 

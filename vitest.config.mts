@@ -13,6 +13,10 @@ export default defineConfig({
     // Phase 1 và Phase 2 đều là logic thuần, không đụng DOM. Chỉ thêm jsdom khi
     // thực sự có component cần render.
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    // prisma/ phải nằm trong danh sách: CR-02 và HI-01 đều là lỗi của logic
+    // seed, nên đó đúng là thư mục cần test nhất — và cũng là thư mục mà runner
+    // không nhìn thấy. Một file prisma/seed.test.ts sẽ không chạy, không báo
+    // lỗi, chỉ im lặng không tồn tại.
+    include: ["src/**/*.test.ts", "prisma/**/*.test.ts"],
   },
 });

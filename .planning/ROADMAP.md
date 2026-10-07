@@ -50,14 +50,19 @@ Ledger là Phase 2 vì nó là lý do viết lại. Bản Apps Script không ch�
 **Depends on:** Nothing (first phase)
 **Requirements:** INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05, INFRA-06, INFRA-07, AUTH-01, AUTH-02, AUTH-03, AUTH-06
 
-**Plans:**
-1. **Scaffold + pin versions** — `create-next-app` App Router + TS strict; pin `prisma@7` và `@prisma/client@7` exact; pin `next-auth@5.0.0-beta.32` exact. (INFRA-01)
-2. **Neon + Prisma adapter** — project Neon region `ap-southeast-1`; `@prisma/adapter-neon` trên pooled string, direct string cho migrate; dev chạy không Docker. (INFRA-02, INFRA-06)
-3. **Vercel pipeline** — import repo, function region `sin1`, `build: prisma generate && prisma migrate deploy && next build`; xác nhận free tier. (INFRA-03, INFRA-04, INFRA-05)
-4. **Google OAuth + DB allowlist** — consent screen, `signIn` callback kiểm tra bảng `Allowlist`, database session strategy, route guard trong `proxy.ts` (**không** `middleware.ts`). (AUTH-01, AUTH-02, AUTH-03, AUTH-06)
-5. **Static app shell** — layout render tĩnh + một trang authenticated tối giản hiện tên người đăng nhập. (INFRA-07)
+**Plans:** 6 plans
 
-**Parallel:** Plan 2 và Plan 3 chạy song song sau Plan 1 (tạo Neon project và tạo Vercel project độc lập nhau). Plan 4 cần cả 2. Plan 5 song song được với Plan 4.
+Plans:
+- [ ] 01-01-PLAN.md — Scaffold + pin versions + cấu hình deploy (INFRA-01, INFRA-03, INFRA-04, INFRA-05)
+- [ ] 01-02-PLAN.md — Schema, Prisma/Neon adapter, seed allowlist có thẩm quyền (INFRA-02, INFRA-06, AUTH-02)
+- [ ] 01-03-PLAN.md — Design token + app shell tĩnh (INFRA-07)
+- [ ] 01-04-PLAN.md — Google OAuth, allowlist gate, route guard `src/proxy.ts` (AUTH-01, AUTH-02, AUTH-03, AUTH-06)
+- [ ] 01-05-PLAN.md — Ba màn hình + gate build chứng minh PPR và proxy (INFRA-07, AUTH-01, AUTH-06)
+- [ ] 01-06-PLAN.md — Checklist thao tác tay tiếng Việt + kiểm chứng live (INFRA-02..05, AUTH-01..06)
+
+**Parallel:** Plan 02 và Plan 03 chạy song song sau Plan 01 (DB và UI không đụng file nhau). Plan 04 cần cả hai. Plan 05 sau Plan 04. Plan 06 là checkpoint cuối.
+
+> **Lệch so với bản phác 5 plan ban đầu — có chủ đích.** Research (đã dựng thử và build thật) cho thấy hai giả định gốc không còn đúng: việc tạo project Vercel/Neon là thao tác tay của người dùng chứ không phải việc agent làm được, nên không thể là "plan" song song; và phần cấu hình deploy thuần code (`vercel.json`, build command) thực chất thuộc về plan scaffold. Vì vậy Plan 3 cũ được tách: phần code gộp vào Plan 01, phần thao tác tay dồn vào Plan 06 cùng mọi bước tay khác — đúng yêu cầu CONTEXT.md là gom tất cả vào **một** checklist liền mạch. Plan 03 mới tách riêng token/shell khỏi các trang vì token system là deliverable dùng cho cả 9 phase.
 
 **Success criteria:**
 1. Mở URL `*.vercel.app` trên điện thoại, bấm "Đăng nhập với Google" một chạm, vào được trang hiện tên mình.
@@ -67,7 +72,7 @@ Ledger là Phase 2 vì nó là lý do viết lại. Bản Apps Script không ch�
 5. Đóng app, hôm sau mở lại vẫn còn phiên đăng nhập; bấm đăng xuất ở bất kỳ màn nào đều thoát được.
 6. Hoá đơn tháng của Vercel + Neon + Google = 0đ.
 
-**Plan files:** TBD (sinh bởi `/gsd-plan-phase`)
+**Plan files:** `01-01-PLAN.md` … `01-06-PLAN.md` (+ `01-SETUP-CHECKLIST.md` sinh bởi Plan 06)
 
 ---
 

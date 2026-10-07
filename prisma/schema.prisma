@@ -1,0 +1,105 @@
+// Schema Phase 1 — CHỈ phần danh tính và quyền truy cập.
+//
+// Phạm vi là ràng buộc, không phải gợi ý: phase này KHÔNG tạo bất kỳ bảng hay
+// cột nào liên quan tới tiền, chi tiêu, chia tiền, thanh toán hay sổ cái.
+// Phase 2 sở hữu toàn bộ schema sổ cái và phải được tự do thiết kế trọn vẹn.
+// Không thêm cột "để dành cho sau".
+
+generator client {
+  // `prisma-client` (KHÔNG phải `prisma-client-js`): generator hiện đại sinh ra
+  // TypeScript mà bản build của Next typecheck được trực tiếp. Bản legacy sinh
+  // JS kèm file khai báo và đang bị loại bỏ dần.
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  // Prisma 7: datasource KHÔNG còn `url` lẫn `directUrl` — cả hai chuyển sang
+  // prisma.config.ts. Cũng không khai báo cờ tính năng xem trước nào: driver
+  // adapter đã GA trong 7 nên cờ `driverAdapters` không còn tồn tại.
+  provider = "postgresql"
+}
+
+// ---- Model của Auth.js adapter. Tên field do adapter quy định, không phải ta. ----
+
+model User {
+  // `id` là khóa ổn định duy nhất: không bao giờ hiển thị, không bao giờ đổi, và
+  // là đích khóa ngoại của mọi dòng sổ cái mà Phase 2 sẽ tạo.
+  id            String    @id @default(cuid())
+  name          String?
+  // @unique là BẮT BUỘC: adapter tra cứu user qua `findUnique({ where: { email } })`.
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+
+  accounts Account[]
+  sessions Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  // Tên cột BẮT BUỘC viết snake_case. `linkAccount` của adapter đẩy nguyên object
+  // response OAuth vào lệnh create, nên đổi sang camelCase sẽ sinh lỗi
+  // "Unknown argument" ở lần đăng nhập ĐẦU TIÊN — không bao giờ ở lúc build.
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Adapter truy vấn đúng khóa ghép này.
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  // Cascade này chỉ kích hoạt khi một **User** bị xóa. Nó KHÔNG phải cơ chế thu
+  // hồi session của thành viên bị gỡ khỏi allowlist — xem ghi chú ở model
+  // Allowlist bên dưới. Việc đó do prisma/seed.ts làm tường minh.
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---- Model của app ----
+
+// Allowlist CỐ TÌNH không có quan hệ nào tới User, và việc thu hồi session KHÔNG
+// được làm bằng cascade ở tầng database.
+//
+// Phương án cascade rất hấp dẫn và hoàn toàn hợp lệ về mặt schema: thêm quan hệ
+// từ `User.email` tới `Allowlist.email` với onDelete: Cascade thì `prisma validate`
+// vẫn xanh và khóa ngoại thật sự được sinh ra. Nhưng thứ bị xóa khi đó là chính
+// **dòng User** — mà `User.id` là đích khóa ngoại vĩnh viễn của mọi dòng sổ cái
+// Phase 2. Gỡ một người khỏi allowlist sẽ xóa luôn con người mà các khoản chi
+// lịch sử đang trỏ tới. Gỡ thành viên là thay đổi quyền truy cập; nó không bao
+// giờ được phép phá hủy lịch sử tài chính, và schema không nên để kết cục đó
+// nằm trong tầm với.
+//
+// Lý do thứ hai: khóa ngoại từ `User.email` tới `Allowlist` biến dòng allowlist
+// thành điều kiện tiên quyết cho sự tồn tại của dòng user, đảo ngược vòng đời
+// mong muốn. Allowlist quyết định ai được *đăng nhập*; nó không sở hữu danh tính.
+model Allowlist {
+  // Luôn lưu chữ thường. parseAllowlist() trong src/lib/allowlist.ts hạ chữ vô
+  // điều kiện, và callback đăng nhập tra cứu cũng hạ chữ đối xứng.
+  email     String   @id
+  label     String?
+  invitedAt DateTime @default(now())
+}

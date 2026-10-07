@@ -1,9 +1,9 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
-import { normalizeEmail } from "@/lib/allowlist";
 import { prisma } from "@/lib/db";
 import { isAuthorizedRequest } from "@/lib/route-guard";
+import { decideSignIn } from "@/lib/sign-in-gate";
 
 // Cấu hình xác thực DUY NHẤT của dự án. Mọi phase sau lấy user hiện tại bằng
 // cách gọi `auth()` từ đây; không nơi nào khác được tự dựng NextAuth().
@@ -69,44 +69,44 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // Hệ quả: cả `return false` lẫn `return "<đường dẫn>"` đều thoát ở dòng 69,
     // phía TRÊN dòng 70. Không User, không Account, không Session. Không cần
     // bất kỳ workaround nào, và thêm workaround vào đây là sai.
+    //
+    // THÂN HÀM nằm ở src/lib/sign-in-gate.ts, nhận phép tra cứu làm tham số.
+    // Tách ra để kiểm chứng được mà không cần database: trước đó hai nhánh từ
+    // chối quan trọng nhất của app — email không có trong allowlist, và email
+    // chưa được Google xác minh — không có lấy một test nào, vì chạm tới chúng
+    // thì phải nạp cả NextAuth lẫn Prisma. Ghi chú bên dưới mô tả hành vi của
+    // hàm đó, và vẫn còn nguyên hiệu lực.
+    //
+    // Trả về CHUỖI là hành vi có kiểu rõ ràng của callback này
+    // (`Awaitable<boolean | string>`): Auth.js đổi nó thành một redirect và
+    // trả ngay cho caller — vẫn ở đúng điểm thoát như `return false`, tức là
+    // vẫn chưa ghi gì cả.
+    //
+    // Vì sao phải mang email theo: màn hình từ chối cần GỌI TÊN địa chỉ vừa
+    // dùng, bởi nguyên nhân thực tế áp đảo là chạm nhầm một trong nhiều tài
+    // khoản Google đang đăng nhập sẵn trên điện thoại. Người bị từ chối không
+    // có session và không có dòng nào trong database, nên trang không thể tra
+    // ngược được — truyền qua URL là cách duy nhất còn lại.
+    //
+    // ĐÁNH ĐỔI ĐÃ CHẤP NHẬN CÓ CÂN NHẮC: cách này đặt một địa chỉ email vào
+    // URL, nên nó sẽ nằm trong lịch sử trình duyệt của một máy có thể dùng
+    // chung, trong log truy cập của hosting, và trong header `Referer` của mọi
+    // request đi ra từ trang đó. Chấp nhận vì giá trị lộ ra là địa chỉ mà
+    // chính người đó vừa tự chọn, được trả lại cho chính họ: không phải bí
+    // mật, không phải thông tin xác thực, không mở được gì. Hai biện pháp
+    // giảm thiểu là BẮT BUỘC chứ không tùy chọn, plan 05 thực thi: trang từ
+    // chối đặt referrer policy `no-referrer`, và trang không nạp bất kỳ tài
+    // nguyên bên thứ ba nào.
+    //
+    // `error=AccessDenied` là tham số đánh dấu: cặp (marker, email) chính là
+    // hợp đồng vào trang của /chua-duoc-moi. Plan 05 dùng marker để chặn người
+    // gõ thẳng URL. Nó KHÔNG phải ranh giới bảo mật — ai cũng giả được — việc
+    // của nó chỉ là chặn truy cập tình cờ vào một trang gây hiểu nhầm.
     async signIn({ profile, account }) {
-      if (account?.provider !== "google") return false;
-
-      // Email CHƯA được Google xác minh thì không bao giờ đem so với allowlist:
-      // một địa chỉ chưa xác minh có thể do kẻ tấn công tự khai, nên khớp nó
-      // với một địa chỉ đã được mời chính là đường chiếm quyền thẳng vào nhóm.
-      if (!profile?.email || !profile.email_verified) return false;
-
-      const email = normalizeEmail(profile.email);
-      const invited = await prisma.allowlist.findUnique({ where: { email } });
-      if (invited) return true;
-
-      // Trả về CHUỖI là hành vi có kiểu rõ ràng của callback này
-      // (`Awaitable<boolean | string>`): Auth.js đổi nó thành một redirect và
-      // trả ngay cho caller — vẫn ở đúng điểm thoát như `return false`, tức là
-      // vẫn chưa ghi gì cả.
-      //
-      // Vì sao phải mang email theo: màn hình từ chối cần GỌI TÊN địa chỉ vừa
-      // dùng, bởi nguyên nhân thực tế áp đảo là chạm nhầm một trong nhiều tài
-      // khoản Google đang đăng nhập sẵn trên điện thoại. Người bị từ chối không
-      // có session và không có dòng nào trong database, nên trang không thể tra
-      // ngược được — truyền qua URL là cách duy nhất còn lại.
-      //
-      // ĐÁNH ĐỔI ĐÃ CHẤP NHẬN CÓ CÂN NHẮC: cách này đặt một địa chỉ email vào
-      // URL, nên nó sẽ nằm trong lịch sử trình duyệt của một máy có thể dùng
-      // chung, trong log truy cập của hosting, và trong header `Referer` của mọi
-      // request đi ra từ trang đó. Chấp nhận vì giá trị lộ ra là địa chỉ mà
-      // chính người đó vừa tự chọn, được trả lại cho chính họ: không phải bí
-      // mật, không phải thông tin xác thực, không mở được gì. Hai biện pháp
-      // giảm thiểu là BẮT BUỘC chứ không tùy chọn, plan 05 thực thi: trang từ
-      // chối đặt referrer policy `no-referrer`, và trang không nạp bất kỳ tài
-      // nguyên bên thứ ba nào.
-      //
-      // `error=AccessDenied` là tham số đánh dấu: cặp (marker, email) chính là
-      // hợp đồng vào trang của /chua-duoc-moi. Plan 05 dùng marker để chặn người
-      // gõ thẳng URL. Nó KHÔNG phải ranh giới bảo mật — ai cũng giả được — việc
-      // của nó chỉ là chặn truy cập tình cờ vào một trang gây hiểu nhầm.
-      return `/chua-duoc-moi?error=AccessDenied&email=${encodeURIComponent(email)}`;
+      return decideSignIn({ profile, account }, async (email) => {
+        const invited = await prisma.allowlist.findUnique({ where: { email } });
+        return invited !== null;
+      });
     },
 
     // Gắn `User.id` lên session để các phase sau có định danh nội bộ ổn định —

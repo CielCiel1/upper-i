@@ -17,7 +17,7 @@ Requirements LEDG-01..07 and MONEY-01..06 exist specifically to make this imposs
 - [x] **INFRA-04**: Prisma migration chạy tự động khi deploy; schema production luôn khớp code
 - [x] **INFRA-05**: Toàn bộ dịch vụ nằm trong tầng miễn phí; chi phí thực tế 0đ/tháng
 - [ ] **INFRA-06**: Kết nối DB dùng pooled connection string + Neon adapter, không cạn connection khi nhiều function chạy song song
-- [ ] **INFRA-07**: App shell render tĩnh nên người dùng thấy giao diện ngay cả khi Neon compute đang resume
+- [x] **INFRA-07**: App shell render tĩnh nên người dùng thấy giao diện ngay cả khi Neon compute đang resume
 
 ### Xác thực & Thành viên (AUTH)
 
@@ -156,7 +156,7 @@ Mapped by `ROADMAP.md` — 64/64 v1 requirements covered, no orphans, no duplica
 | INFRA-04 | Phase 1 — Nền tảng sống | Complete |
 | INFRA-05 | Phase 1 — Nền tảng sống | Complete |
 | INFRA-06 | Phase 1 — Nền tảng sống | Pending |
-| INFRA-07 | Phase 1 — Nền tảng sống | Pending |
+| INFRA-07 | Phase 1 — Nền tảng sống | Complete |
 | AUTH-01 | Phase 1 — Nền tảng sống | Pending |
 | AUTH-02 | Phase 1 — Nền tảng sống | Pending |
 | AUTH-03 | Phase 1 — Nền tảng sống | Pending |

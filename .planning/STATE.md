@@ -6,14 +6,14 @@ current_phase: 1
 current_phase_name: Nền tảng sống
 status: executing
 stopped_at: Roadmap created and verified — all 64 v1 REQ-IDs mapped to phases, zero orphans
-last_updated: "2026-10-07T07:57:05.838Z"
+last_updated: "2026-10-07T08:09:04.798Z"
 last_activity: 2026-10-06
 last_activity_desc: "Project initialized: PROJECT.md, REQUIREMENTS.md (64 v1 REQ-IDs), ROADMAP.md (9 phases), 4 research docs"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 6
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase UPI-01-n-n-t-ng-s-ng P01 | 35m | 3 tasks | 14 files |
+| Phase UPI-01 P03 | 35m | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,7 @@ Recent decisions affecting current work:
 - [Init]: Vercel Hobby + Neon + Vercel Blob; 0đ/tháng, deploy bằng `git push`
 - [Init]: Idempotency key sinh lúc MỞ form, không phải lúc submit
 - [Init]: Thanh toán pending không đổi số dư; rút gọn nợ mặc định TẮT
+- [Phase ?]: 01-03: kept !important in reduced-motion with scoped biome-ignore — @layer base loses the cascade without it (WCAG 2.3.3)
 
 ### Pending Todos
 
@@ -96,6 +98,6 @@ Từ research, cần để mắt khi tới phase liên quan:
 
 ## Session Continuity
 
-Last session: 2026-10-07T07:57:05.831Z
+Last session: 2026-10-07T08:09:00.303Z
 Stopped at: Roadmap created and verified — all 64 v1 REQ-IDs mapped to phases, zero orphans
 Resume file: None

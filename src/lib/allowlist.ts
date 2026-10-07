@@ -17,6 +17,33 @@ export function normalizeEmail(email: string): string {
 }
 
 /**
+ * Hình dạng tối thiểu của một địa chỉ email, dùng chung cho mọi nơi trong app.
+ *
+ * Cố tình KHÔNG phải RFC 5322: đây là allowlist do người vận hành tự gõ cho một
+ * nhóm dưới 10 người, nên việc cần làm là bắt lỗi gõ nhầm, không phải chấp nhận
+ * mọi địa chỉ hợp lệ về lý thuyết.
+ *
+ * Vì sao `,` và `;` bị cấm bên trong local-part lẫn domain, dù RFC cho phép
+ * trong dạng quoted: `,` là dấu phân tách của chính biến ALLOWLIST_EMAILS, và
+ * `;` là thứ người ta gõ nhầm thay cho nó. Cấm cả hai biến một lỗi phân tách
+ * thành lỗi ẦM Ĩ, thay vì để cả danh sách sập thành một mục rác đi qua lọt
+ * (xem CR-02 — đó chính là đường dẫn tới việc xóa sạch allowlist).
+ */
+const EMAIL_SHAPE = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
+
+/**
+ * Một chuỗi có mang hình dạng email tối thiểu hay không.
+ *
+ * Xuất ra ngoài để tầng UI dùng CHUNG một định nghĩa với allowlist. Trước đây
+ * /chua-duoc-moi tự giữ một regex riêng, nên tồn tại những địa chỉ vừa được
+ * allowlist chấp nhận vừa bị trang đó từ chối — đúng kiểu trôi lệch mà
+ * normalizeEmail sinh ra để ngăn.
+ */
+export function isPlausibleEmail(value: string): boolean {
+  return EMAIL_SHAPE.test(value);
+}
+
+/**
  * Phân tích biến môi trường ALLOWLIST_EMAILS thành các mục đã chuẩn hóa.
  *
  * Định dạng: `email[:nhãn]`, phân tách bằng dấu phẩy.
@@ -57,11 +84,39 @@ function parseEntry(segment: string): AllowlistEntry {
 
   const label = rawLabel.trim();
 
+  // Đi qua đúng hàm mà callback `signIn` dùng để tra cứu. Gọi chung một hàm
+  // thay vì lặp lại `.trim().toLowerCase()` là điều khiến hai đầu không thể
+  // trôi lệch nhau về sau.
+  const email = normalizeEmail(rawEmail);
+
+  // CR-02. Phép kiểm tra này phải nằm ở ĐÂY, trên từng mục, chứ không phải ở
+  // chỗ đếm số mục bên trên — và lý do là một lỗi đã thực sự tồn tại:
+  //
+  // `parseAllowlist` chỉ throw khi phân tích ra KHÔNG mục nào. Nó chưa bao giờ
+  // kiểm tra hình dạng của thứ nó trả về. Đầu vào ":x" cho ra [{email: ""}] —
+  // ĐÚNG MỘT mục, nên phép đếm đi qua lọt. Seed sau đó chạy
+  // `deleteMany({ where: { email: { notIn: [""] } } })`: mọi dòng allowlist
+  // THẬT bị xóa, mọi session bị thu hồi, rồi script in báo cáo gọn gàng và
+  // thoát 0. Không ai đăng nhập lại được, vì callback `signIn` tra một bảng
+  // đã không còn họ.
+  //
+  // Dấu `;` hay dấu cách thay cho dấu phẩy gây đúng hậu quả đó: cả danh sách
+  // sập thành MỘT mục rác, vẫn qua được phép đếm. Đây là lỗi gõ nhầm một lần
+  // trong ô biến môi trường trên dashboard Vercel.
+  //
+  // Hàm này thuần và không chạm database, nhưng nó là thứ duy nhất đứng giữa
+  // một lần gõ nhầm và một lệnh deleteMany xóa sạch. Việc sửa thuộc về khâu
+  // kiểm tra đầu vào, không phải khâu xóa — seed vẫn PHẢI xóa thành viên đã bị
+  // gỡ, nếu không biến môi trường và database sẽ trôi thành hai nguồn sự thật.
+  if (!isPlausibleEmail(email)) {
+    throw new Error(
+      `ALLOWLIST_EMAILS chứa mục không phải địa chỉ email: ${JSON.stringify(segment)}. ` +
+        "Định dạng: email[:nhãn], phân tách bằng DẤU PHẨY.",
+    );
+  }
+
   return {
-    // Đi qua đúng hàm mà callback `signIn` dùng để tra cứu. Gọi chung một hàm
-    // thay vì lặp lại `.trim().toLowerCase()` là điều khiến hai đầu không thể
-    // trôi lệch nhau về sau.
-    email: normalizeEmail(rawEmail),
+    email,
     label: label.length > 0 ? label : null,
   };
 }

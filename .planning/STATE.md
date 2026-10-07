@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-10-06)
 ## Current Position
 
 Phase: 1 of 9 (Nền tảng sống)
-Plan: 5 of 6 in current phase
-Status: Ready to execute
-Last activity: 2026-10-07 — Completed 01-04: Google sign-in, allowlist gate, route guard
+Plan: 6 of 6 in current phase
+Status: **Blocked on human checkpoint** — 01-06 Task 1 (docs) done, Task 2 needs Neon/Vercel/Google accounts
+Last activity: 2026-10-07 — 01-06 docs: setup checklist + README written; awaiting the human setup sitting
 
-Progress: [███████░░░] 67%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -105,6 +105,6 @@ Từ research, cần để mắt khi tới phase liên quan:
 
 ## Session Continuity
 
-Last session: 2026-10-07T08:42:43.288Z
-Stopped at: Roadmap created and verified — all 64 v1 REQ-IDs mapped to phases, zero orphans
-Resume file: None
+Last session: 2026-10-07T17:40:00.000Z
+Stopped at: 01-06 Task 1 complete (01-SETUP-CHECKLIST.md + README.md). Task 2 is a blocking human checkpoint — no live infrastructure exists yet.
+Resume file: .planning/phases/UPI-01-n-n-t-ng-s-ng/01-SETUP-CHECKLIST.md

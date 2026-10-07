@@ -179,7 +179,10 @@ tokens that are not spacing multiples, documented as exceptions below.
 |---|---|---|
 | `--size-touch-min` | **44px** | Apple HIG minimum touch target. 44 is not a multiple of 8 but is a hard platform constant. Used as `min-h`/`min-w` on every interactive element |
 | `--shell-gutter` | `max(16px, env(safe-area-inset-left))` | Resolves to 16px on non-notched devices; larger in landscape on notched phones. Dynamic by nature |
+| `--shell-safe-top` | `env(safe-area-inset-top)` | Notch/dynamic-island clearance. Dynamic by nature |
 | `--shell-safe-bottom` | `max(16px, env(safe-area-inset-bottom))` | Clears the iOS home indicator. Dynamic by nature |
+| `--shell-header-content` | **56px** (3.5rem) | On the grid (14×4), listed here because it is a *content* height that must be composed with `--shell-safe-top` via `calc()`, never used as a bare fixed `height`. See "Header height and the safe-area trap" |
+| `--shell-tabbar-height` | `calc(content + safe-bottom)` | Composed total. Consumers use it **alone** — adding `--shell-safe-bottom` again double-counts the inset |
 
 44px is **larger** than the research minimum in one place by design: the UX doc specifies member
 avatars in the exclude-row must be ≥44px with ≥8px gaps because a mis-tap silently changes who pays.
@@ -198,9 +201,32 @@ No 500, no 700. The variable font makes both free in bytes; the discipline is vi
 | Heading | 20px / 1.25rem | 600 | 1.35 | `text-heading` |
 | Body | 16px / 1rem | 400 | 1.5 | `text-body` |
 | Label | 14px / 0.875rem | 600 | 1.4 | `text-label` |
+| Caption | 14px / 0.875rem | 400 | 1.4 | `text-caption` |
 
-Four sizes, two weights. Caption/muted text reuses **Label size at weight 400** rather than adding a
-fifth size — differentiation comes from colour (`text-muted`), not scale.
+**Four sizes, two weights.** Caption is *not* a fifth size — it is the same 14px/1.4 metrics as Label,
+differing only in weight.
+
+### Why Caption is its own token (and not `text-label font-normal`)
+
+Tailwind v4 bakes a `--text-*--font-weight` pair into the size utility itself. Because
+`--text-label--font-weight: 600` is part of the `text-label` token, any caption written as
+`text-label` arrives at weight 600. Writing `text-label font-normal` to undo it is a utility
+fighting its own token — it works, but it is exactly the kind of override that drifts: one component
+forgets `font-normal`, and a muted timestamp silently renders semibold.
+
+Two clean options existed:
+
+1. **Don't bake weight into `--text-label`**, and set weight at every call site.
+2. **Declare a separate `--text-caption`** with the same size/leading and weight 400.
+
+Option 2 is chosen. Option 1 pushes a decision to every call site and means *neither* label nor
+caption has a default weight, so both become two-class constructs. Option 2 costs one extra token
+and makes both single-class: `text-label` is always 600, `text-caption` is always 400, and neither
+needs an override.
+
+This does not violate the four-size rule: Caption and Label are the **same size**. The contract is
+four *sizes* and two *weights*; this adds neither. Differentiation between them is weight, and
+between caption and body is colour (`text-ink-muted`), not scale.
 
 ### The 16px input floor
 
@@ -266,6 +292,45 @@ same hue, so the accent never competes with the balance semantics.
 
 All ratios below are **computed**, not estimated (WCAG 2.1 relative luminance).
 
+### Token naming — avoiding the `text-primary` collision
+
+Tailwind v4 generates utilities by appending the token's suffix to a property prefix. A token named
+`--color-text-primary` therefore produces **`text-text-primary`** (stuttering), while the accent
+token `--color-primary` produces **`text-primary`** — which *reads* like "primary text colour" but
+actually applies the teal accent. Two different things would compete for the name a developer
+naturally reaches for, and the failure is silent: `text-primary` on a paragraph compiles fine and
+renders teal body copy.
+
+Resolution — ink colours are named for what they are, not for their rank:
+
+| Old (colliding) | New | Utility | Meaning |
+|---|---|---|---|
+| `--color-text-primary` | **`--color-ink`** | `text-ink` | Primary reading colour |
+| `--color-text-secondary` | **`--color-ink-soft`** | `text-ink-soft` | Supporting copy |
+| `--color-text-muted` | **`--color-ink-muted`** | `text-ink-muted` | Timestamps, captions |
+| `--color-primary` | **`--color-accent`** | `text-accent`, `bg-accent` | The 10% accent |
+| `--color-primary-hover` | **`--color-accent-hover`** | — | Accent hover |
+| `--color-on-primary` | **`--color-on-accent`** | `text-on-accent` | Content on filled accent |
+
+`text-primary` now generates **nothing** — there is no `--color-primary`. A stray `text-primary` in
+a later phase fails loudly as an unknown class instead of silently painting text teal.
+
+**Sibling tokens checked for the same defect:**
+
+- `--color-border` → `border-border`. Stutters, but is **unambiguous** — there is no competing
+  `--color-border-*` meaning something else, and `border-border` is the idiomatic shadcn/Tailwind
+  form a developer already expects. **Kept**; renaming to `--color-line` would buy nothing and
+  break the convention readers know.
+- `--color-border-strong` → `border-border-strong`. Same reasoning. **Kept.**
+- `--color-surface` / `-raised` / `-sunken` → `bg-surface-raised`. No collision. **Kept.**
+- `--color-positive` / `--color-negative` → `text-positive`. No collision. **Kept.**
+- `--color-destructive` / `--color-on-destructive`. No collision. **Kept.**
+- `--color-focus` → consumed only via `var()` in the base layer, never as a utility. **Kept.**
+
+**Rule for later phases:** before adding a `--color-*` token, mentally prepend `text-`, `bg-`, and
+`border-` to its name. If the result is ambiguous with an existing token or reads as a different
+property, rename it.
+
 ### Light mode
 
 | Role | Token | Hex | Contrast vs surface | Usage |
@@ -274,11 +339,11 @@ All ratios below are **computed**, not estimated (WCAG 2.1 relative luminance).
 | Secondary (30%) | `--color-surface-raised` | `#FFFFFF` | — | Cards, header, future tab bar |
 | Border | `--color-border` | `#E7E5E4` | 1.20 | Hairlines, dividers |
 | Border strong | `--color-border-strong` | `#D6D3D1` | 1.43 | Input borders, button outlines |
-| Text primary | `--color-text-primary` | `#1C1917` | **16.74** ✅ AAA | Body copy, headings |
-| Text secondary | `--color-text-secondary` | `#44403C` | **9.84** ✅ AAA | Supporting copy |
-| Text muted | `--color-text-muted` | `#78716C` | **4.59** ✅ AA | Timestamps, captions |
-| Accent (10%) | `--color-primary` | `#0F766E` | **5.24** ✅ AA | *see reserved list* |
-| On-accent | `--color-on-primary` | `#FFFFFF` | **5.47** on primary ✅ AA | Text/icon on filled accent |
+| Text primary | `--color-ink` | `#1C1917` | **16.74** ✅ AAA | Body copy, headings |
+| Text secondary | `--color-ink-soft` | `#44403C` | **9.84** ✅ AAA | Supporting copy |
+| Text muted | `--color-ink-muted` | `#78716C` | **4.59** ✅ AA | Timestamps, captions |
+| Accent (10%) | `--color-accent` | `#0F766E` | **5.24** ✅ AA | *see reserved list* |
+| On-accent | `--color-on-accent` | `#FFFFFF` | **5.47** on primary ✅ AA | Text/icon on filled accent |
 | **Positive** | `--color-positive` | `#047857` | **5.25** ✅ AA | "Bạn được nhận" |
 | **Negative** | `--color-negative` | `#B91C1C` | **6.19** ✅ AA | "Bạn đang nợ" |
 | Destructive | `--color-destructive` | `#B91C1C` | **6.19** ✅ AA | Destructive actions only |
@@ -292,11 +357,11 @@ All ratios below are **computed**, not estimated (WCAG 2.1 relative luminance).
 | Secondary | `--color-surface-raised` | `#1C1917` | — | — |
 | Border | `--color-border` | `#292524` | 1.30 | 1.15 |
 | Border strong | `--color-border-strong` | `#44403C` | 1.92 | 1.70 |
-| Text primary | `--color-text-primary` | `#FAFAF9` | **18.92** ✅ | **16.74** ✅ |
-| Text secondary | `--color-text-secondary` | `#D6D3D1` | **13.26** ✅ | **11.74** ✅ |
-| Text muted | `--color-text-muted` | `#A8A29E` | **7.83** ✅ | **6.93** ✅ |
-| Accent | `--color-primary` | `#2DD4BF` | **10.61** ✅ | **9.39** ✅ |
-| On-accent | `--color-on-primary` | `#0C0A09` | 10.61 on primary ✅ | — |
+| Text primary | `--color-ink` | `#FAFAF9` | **18.92** ✅ | **16.74** ✅ |
+| Text secondary | `--color-ink-soft` | `#D6D3D1` | **13.26** ✅ | **11.74** ✅ |
+| Text muted | `--color-ink-muted` | `#A8A29E` | **7.83** ✅ | **6.93** ✅ |
+| Accent | `--color-accent` | `#2DD4BF` | **10.61** ✅ | **9.39** ✅ |
+| On-accent | `--color-on-accent` | `#0C0A09` | 10.61 on primary ✅ | — |
 | **Positive** | `--color-positive` | `#34D399` | **10.28** ✅ | **9.10** ✅ |
 | **Negative** | `--color-negative` | `#FCA5A5` | **10.41** ✅ | **9.21** ✅ |
 | Destructive | `--color-destructive` | `#F87171` | 7.14 ✅ | 6.32 ✅ |
@@ -317,7 +382,7 @@ The accent is **not** "all interactive elements". It is reserved for exactly:
 4. The **FAB** (add-expense) introduced in Phase 3.
 5. The **logo/wordmark** glyph.
 
-Explicitly **not** accent-coloured: links in body copy (use `text-primary` + underline), secondary
+Explicitly **not** accent-coloured: links in body copy (use `text-ink` + underline), secondary
 buttons, icons, borders, hover states, headings, or any informational surface.
 
 ### Why `#059669` is dropped
@@ -372,8 +437,23 @@ Colour is the fourth channel. **Rule for every later phase: no UI element may us
 positive/negative colours as the sole differentiator.** A checker reviewing Phase 4 should fail any
 balance row that is distinguished only by hue.
 
-A `prefers-contrast: more` block additionally adds a left border to each row — shape-based, works at
-any CVD.
+**There is no media query for colour-blindness.** `prefers-contrast: more` detects a request for
+*higher contrast*, and `forced-colors: active` detects a forced palette (Windows High Contrast).
+Neither reports colour vision deficiency, and no CSS feature does — the browser is not told. An
+earlier draft of this spec claimed a `prefers-contrast` block supplied a shape-based cue "at any
+CVD"; that was wrong on both counts, since the query doesn't detect CVD and the block only
+reassigned a muted text colour.
+
+The correction is architectural, not a media query: **the three redundant channels above are
+unconditional.** They are present for every user on every render, because the one group that needs
+them cannot be detected. A cue that only appears under `prefers-contrast: more` would reach almost
+none of the ~8% of men with red-green CVD, who have no reason to have enabled a high-contrast OS
+setting.
+
+The `prefers-contrast: more` block in the base CSS is therefore scoped to what it genuinely does —
+darkening muted text that sits at the 4.5:1 AA floor for users who asked for more contrast. It is a
+legibility enhancement, not an accessibility fallback, and the redundant-encoding contract does not
+depend on it.
 
 ---
 
@@ -506,6 +586,12 @@ Key syntax points confirmed from the docs:
   --text-label--line-height: 1.4;
   --text-label--font-weight: 600;
 
+  /* Same size/leading as label, weight 400. A separate token so captions never need
+     `font-normal` to undo a baked 600 — see "Why Caption is its own token". */
+  --text-caption: 0.875rem;      /* 14px */
+  --text-caption--line-height: 1.4;
+  --text-caption--font-weight: 400;
+
   --font-weight-regular: 400;
   --font-weight-semibold: 600;
 
@@ -529,13 +615,13 @@ Key syntax points confirmed from the docs:
   --color-border: #E7E5E4;
   --color-border-strong: #D6D3D1;
 
-  --color-text-primary: #1C1917;
-  --color-text-secondary: #44403C;
-  --color-text-muted: #78716C;
+  --color-ink: #1C1917;
+  --color-ink-soft: #44403C;
+  --color-ink-muted: #78716C;
 
-  --color-primary: #0F766E;
-  --color-primary-hover: #115E59;
-  --color-on-primary: #FFFFFF;
+  --color-accent: #0F766E;
+  --color-accent-hover: #115E59;
+  --color-on-accent: #FFFFFF;
 
   --color-positive: #047857;   /* "được nhận" — replaces legacy #059669 (failed AA at 3.61) */
   --color-negative: #B91C1C;   /* "đang nợ"   — replaces legacy #DC2626 (thin margin)        */
@@ -564,13 +650,13 @@ Key syntax points confirmed from the docs:
     --color-border: #292524;
     --color-border-strong: #44403C;
 
-    --color-text-primary: #FAFAF9;
-    --color-text-secondary: #D6D3D1;
-    --color-text-muted: #A8A29E;
+    --color-ink: #FAFAF9;
+    --color-ink-soft: #D6D3D1;
+    --color-ink-muted: #A8A29E;
 
-    --color-primary: #2DD4BF;
-    --color-primary-hover: #5EEAD4;
-    --color-on-primary: #0C0A09;
+    --color-accent: #2DD4BF;
+    --color-accent-hover: #5EEAD4;
+    --color-on-accent: #0C0A09;
 
     --color-positive: #34D399;
     --color-negative: #FCA5A5;
@@ -594,14 +680,22 @@ Key syntax points confirmed from the docs:
   --shell-gutter: max(1rem, env(safe-area-inset-left));
   --shell-safe-top: env(safe-area-inset-top);
   --shell-safe-bottom: max(1rem, env(safe-area-inset-bottom));
-  --shell-tabbar-height: 0px;   /* Phase 3 sets this to 56px */
+
+  /* CONTENT box heights — the usable area, EXCLUDING any safe-area inset.
+     Bars compose these with the inset via calc(); they never absorb it. */
+  --shell-header-content: 3.5rem;   /* 56px — clears the 44px touch minimum */
+  --shell-tabbar-content: 0px;      /* Phase 3 sets this to 3.5rem (56px) */
+
+  /* Total occupied height, inset included. Layout padding uses THESE. */
+  --shell-tabbar-height: calc(var(--shell-tabbar-content) + var(--shell-safe-bottom));
+
   --size-touch-min: 44px;
 }
 
 @layer base {
   body {
     background-color: var(--color-surface);
-    color: var(--color-text-primary);
+    color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -637,9 +731,15 @@ Key syntax points confirmed from the docs:
   }
 }
 
-/* High-contrast users get shape-based reinforcement on top of the word-based encoding */
+/* Users who asked the OS for more contrast: lift muted text off the 4.5:1 AA floor.
+   NOTE: this is a legibility enhancement only. It is NOT the colour-blindness
+   accommodation — no media query detects CVD. That is handled unconditionally by the
+   word/grouping/shape encoding, which is always on. */
 @media (prefers-contrast: more) {
-  :root { --color-text-muted: var(--color-text-secondary); }
+  :root {
+    --color-ink-muted: var(--color-ink-soft);  /* 4.59:1 -> 9.84:1 */
+    --color-border: var(--color-border-strong);
+  }
 }
 ```
 
@@ -705,14 +805,21 @@ shell would block on Neon's cold start and INFRA-07 would be violated by constru
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi" className={inter.variable}>
-      <body className="min-h-dvh bg-surface text-text-primary font-sans antialiased">
+      <body className="min-h-dvh bg-surface text-ink font-sans antialiased">
         <div className="flex min-h-dvh flex-col">
           <header
-            className="flex h-14 shrink-0 items-center justify-between border-b border-border
+            className="flex shrink-0 items-center justify-between border-b border-border
                        bg-surface-raised px-[var(--shell-gutter)]"
-            style={{ paddingTop: 'var(--shell-safe-top)' }}
+            style={{
+              /* Total height GROWS by the safe-area inset so the 56px content box is
+                 preserved. `h-14` + paddingTop would SUBTRACT the notch from the 56px:
+                 on an iPhone 16 Pro (inset 59px) that computes to -3px and the header
+                 collapses. See "Header height and the safe-area trap". */
+              height: 'calc(var(--shell-header-content) + var(--shell-safe-top))',
+              paddingTop: 'var(--shell-safe-top)',
+            }}
           >
-            <span className="text-heading text-primary">Upper-I</span>
+            <span className="text-heading text-accent">Upper-I</span>
             {/* Phase 3+: avatar / account menu mounts here */}
             <div className="min-h-[var(--size-touch-min)] min-w-[var(--size-touch-min)]" />
           </header>
@@ -720,10 +827,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main
             className="flex-1 px-[var(--shell-gutter)]"
             style={{
-              /* Reserves space for the Phase 3 tab bar. 0px today; 56px then.
-                 Nothing else changes when the tab bar lands. */
-              paddingBottom:
-                'calc(var(--shell-tabbar-height) + var(--shell-safe-bottom))',
+              /* --shell-tabbar-height ALREADY includes --shell-safe-bottom, so it is
+                 used alone here. Adding the inset again would double-count it and
+                 leave a dead gap under every screen.
+                 Today: 0px + safe-bottom. Phase 3: 56px + safe-bottom. */
+              paddingBottom: 'var(--shell-tabbar-height)',
             }}
           >
             {children}
@@ -744,15 +852,18 @@ hyphenation/translation behaviour.
 
 Phase 1 **must not build** the tab bar. It builds the *hole* the tab bar drops into:
 
-1. **`--shell-tabbar-height`** is already declared and already consumed by `<main>`'s bottom padding.
-   Phase 3 changes `0px` → `56px` in one place; every screen's scroll bottom corrects simultaneously.
-   Without this, Phase 3 would have to add bottom padding to each screen individually and would miss one.
+1. **`--shell-tabbar-content`** is already declared and already consumed by `<main>`'s bottom padding
+   (via `--shell-tabbar-height`). Phase 3 changes `0px` → `3.5rem` in **one place**; every screen's
+   scroll bottom corrects simultaneously. Without this, Phase 3 would have to add bottom padding to
+   each screen individually and would miss one.
 2. **The flex column** already has a slot after `<main>`. The tab bar is `position: fixed` with
    `bottom: 0`, but the reserved padding is what keeps content from scrolling underneath it.
-3. **Safe-area bottom is composed, not replaced** —
-   `calc(var(--shell-tabbar-height) + var(--shell-safe-bottom))`. On a notched phone the tab bar sits
-   above the home indicator and content clears both. Getting this wrong is the single most common
-   iOS layout bug in bottom-tab apps.
+3. **Safe-area bottom is composed into the token, not bolted on at each call site** —
+   `--shell-tabbar-height = calc(--shell-tabbar-content + --shell-safe-bottom)`. Consumers use
+   `--shell-tabbar-height` **alone**; adding `--shell-safe-bottom` again double-counts the inset.
+   The tab bar itself applies the same rule as the header: its *content* stays 56px and its total
+   height grows by the inset, so it sits above the home indicator rather than under it. Getting
+   this wrong is the single most common iOS layout bug in bottom-tab apps.
 4. **`min-h-dvh`, not `min-h-screen`.** `dvh` tracks the *dynamic* viewport as mobile browser chrome
    collapses on scroll; `vh` does not, and causes a bottom-anchored bar to drift under the URL bar.
 5. **The header's right slot** is a 44×44 spacer today, so adding the avatar in Phase 3 does not
@@ -760,6 +871,50 @@ Phase 1 **must not build** the tab bar. It builds the *hole* the tab bar drops i
 
 **Tab labels are fixed now** (from UX research, for Phase 3): `Số dư` · `Lịch sử` · `Nhóm`.
 Three tabs, not five. The add-expense FAB is *not* a tab — it floats on every tab.
+
+### Header height and the safe-area trap
+
+A fixed height plus safe-area padding is a silent crusher, and an earlier draft of this spec had it:
+
+```
+h-14 (56px fixed) + paddingTop: env(safe-area-inset-top)
+```
+
+In CSS `height` is the **border-box** target under `box-sizing: border-box` (Tailwind's Preflight
+default), so top padding is taken *out of* the 56px rather than added to it:
+
+| Device | `safe-area-inset-top` | Content box with `h-14` | Verdict |
+|---|---|---|---|
+| Any non-notched phone | 0px | 56px | OK — which is why this bug survives desktop review |
+| iPhone 14 Pro (portrait) | 44px | **12px** | Wordmark clipped; 44px touch target impossible |
+| iPhone 16 Pro (portrait) | 59px | **−3px** | Header collapses entirely |
+
+The device this app is *for* is a phone, and a modern iPhone reports a non-zero top inset. UX-04
+(≥44×44px touch targets) is violated the moment the inset exceeds 12px.
+
+**The rule: a bar's height must GROW by the inset, never absorb it.**
+
+```css
+height: calc(var(--shell-header-content) + var(--shell-safe-top));
+padding-top: var(--shell-safe-top);
+```
+
+The padding pushes content below the notch; the `calc()` gives the element the extra room to do so.
+The content box stays exactly 56px on every device.
+
+This is why the tokens are split into a `-content` pair and a composed total:
+
+| Token | Meaning |
+|---|---|
+| `--shell-header-content` | Usable content height — **56px, constant on all devices** |
+| `--shell-tabbar-content` | Same for the tab bar — `0px` in Phase 1, `3.5rem` in Phase 3 |
+| `--shell-tabbar-height` | `content + safe-bottom` — the **total** a layout must reserve |
+
+**Applies to every bar in the project**, present and future: the header (Phase 1), the bottom tab
+bar (Phase 3), and the bottom sheet's sticky Save row (Phase 3). The alternative,
+`min-height` + padding, also works, but a fixed `calc()` height is preferred for the header and tab
+bar because a fixed-height bar must not reflow when its contents change — an avatar landing in the
+header's right slot should not resize the bar.
 
 ---
 
@@ -824,19 +979,68 @@ Android phone on 4G. `opacity` is compositor-only. It is also calmer, which fits
 **Rule 7 — Respect `prefers-reduced-motion`.** The global reduce block already freezes the pulse to
 a static tint. A pulsing rectangle is a vestibular trigger.
 
+### Sizing a skeleton correctly — why `h-*` is the wrong tool here
+
+Rule 3 demands the skeleton match the final box. Working that out for the greeting:
+
+```
+greeting = text-display = 2rem x line-height 1.3 = 41.6px
+```
+
+**41.6px is not a multiple of 4, so no Tailwind `h-*` class can express it.** `h-10` is 40px and
+`h-11` is 44px; both are wrong, and both guarantee the layout shift Rule 3 exists to prevent.
+(An earlier draft of this spec managed to contradict itself three ways here — `h-7` in the code
+block, `h-9` in the screen table, against a real box of 41.6px. All three disagreed.)
+
+The fix is to stop expressing the skeleton in grid units and express it in the **same unit as the
+text it stands in for**:
+
+| Approach | Result | Verdict |
+|---|---|---|
+| `h-10` (40px) | 1.6px short | Shifts; breaks Rule 3 |
+| `h-11` (44px) | 2.4px over | Shifts; breaks Rule 3 |
+| `h-[41.6px]` | Exact | Correct but brittle — a magic number that silently rots if the display token changes |
+| **`h-[1.3em]` on a `text-display` element** | Exact, and **derives from the token** | ✅ Chosen |
+
+`1.3em` resolves against the element's own `font-size`, so placing the skeleton inside a
+`text-display` wrapper makes it exactly one display line tall — and it stays correct automatically
+if `--text-display` or its line-height is ever retuned. The skeleton is sized by the type system
+rather than by a hand-copied pixel value.
+
+**Width:** no width can "match" a name of unknown length, and claiming otherwise is false precision.
+The width is a deliberate *placeholder estimate* sized to a typical Vietnamese given name
+(`Chào ` + 4–8 characters). `w-48` (192px) is chosen as a plausible average. Horizontal shift when
+the real name arrives is accepted and harmless — it is left-aligned text, so only the right edge
+moves and no surrounding element is displaced. Rule 3's "same width" applies to box-shaped content
+(cards, rows, avatars), not to a single line of variable-length text.
+
 ### Phase 1 application
 
-Phase 1 has exactly one suspendable boundary: the authenticated page's user name.
+Phase 1 has exactly one suspendable boundary: the authenticated page's greeting and email.
 
 ```tsx
 // app/(app)/page.tsx
-<Suspense fallback={<div className="skeleton h-7 w-48" />}>
+<Suspense
+  fallback={
+    <div>
+      {/* Each skeleton sits in a wrapper carrying the type token it replaces,
+          so `em` resolves to that role's exact line box. */}
+      <div className="text-display">
+        <Skeleton className="h-[1.3em] w-48" />   {/* 2rem x 1.3 = 41.6px */}
+      </div>
+      <div className="text-caption mt-1">
+        <Skeleton className="h-[1.4em] w-56" />   {/* 0.875rem x 1.4 = 19.6px */}
+      </div>
+    </div>
+  }
+>
   <UserGreeting />
 </Suspense>
 ```
 
-`h-7` (28px) and `w-48` match the rendered greeting's box, so there is no shift when the name lands.
-This one-line pattern is the template for Phase 4's balance card and Phase 7's history list.
+Both fallbacks derive their height from the type token of the text they replace, so the vertical
+box is exact and the greeting does not jump when it lands. This is the template for Phase 4's
+balance card and Phase 7's history list: **wrap in the type token, size the skeleton in `em`.**
 
 ---
 
@@ -882,7 +1086,7 @@ whole keyboard story of Phase 1.
     type="submit"
     className="flex min-h-12 w-full items-center justify-center gap-3
                rounded-control border border-border-strong bg-surface-raised
-               px-6 text-body font-semibold text-text-primary
+               px-6 text-body font-semibold text-ink
                transition-colors hover:bg-surface-sunken
                disabled:opacity-60"
   >
@@ -924,8 +1128,8 @@ awaits.
 │                             │
 │         (vertical centre)   │
 │                             │
-│         Upper-I             │  Display 32/600, text-primary (teal)
-│   Chia tiền nhóm, số dư     │  Body 16/400, text-secondary
+│         Upper-I             │  Display 32/600, text-accent (teal)
+│   Chia tiền nhóm, số dư     │  Body 16/400, text-ink-soft
 │        luôn đúng.           │  max-w-[28ch], centred
 │                             │
 │  ┌───────────────────────┐  │
@@ -933,7 +1137,7 @@ awaits.
 │  │      Google           │  │  bordered (NOT accent-filled)
 │  └───────────────────────┘  │
 │                             │
-│  Chỉ thành viên trong nhóm  │  Label 14/400, text-muted
+│  Chỉ thành viên trong nhóm  │  Caption 14/400, text-ink-muted
 │  mới đăng nhập được.        │  centred, max-w-[32ch]
 │                             │
 └─────────────────────────────┘
@@ -981,14 +1185,14 @@ tưởng app hỏng."* A silent redirect creates a loop that reads as a broken a
 │  Upper-I                    │
 ├─────────────────────────────┤
 │                             │
-│   Email này chưa được mời   │  Heading 20/600, text-primary
+│   Email này chưa được mời   │  Heading 20/600, text-ink
 │                             │
-│   Tài khoản                 │  Body 16/400, text-secondary
+│   Tài khoản                 │  Body 16/400, text-ink-soft
 │   an.nguyen@gmail.com       │  ← email in medium weight
 │   chưa có trong danh sách   │
 │   thành viên của nhóm.      │
 │                             │
-│   Nếu bạn nghĩ đây là nhầm  │  Body 16/400, text-secondary
+│   Nếu bạn nghĩ đây là nhầm  │  Body 16/400, text-ink-soft
 │   lẫn, nhắn cho người quản  │
 │   lý nhóm để được thêm vào. │
 │                             │
@@ -1003,7 +1207,7 @@ tưởng app hỏng."* A silent redirect creates a loop that reads as a broken a
 sounding like an error or a security accusation. Decisions made to achieve that:
 
 - **No red. No warning icon. No error styling.** This is not an error — the system worked correctly.
-  The page uses ordinary `text-primary`/`text-secondary` on a plain card. Red would say
+  The page uses ordinary `text-ink`/`text-ink-soft` on a plain card. Red would say
   "you did something wrong"; the user did nothing wrong.
 - **"chưa được mời" — *not yet* invited, not "denied"/"không có quyền"/"truy cập bị từ chối".**
   The Vietnamese adverb `chưa` carries "not yet", implying a reversible, administrative state rather
@@ -1047,7 +1251,7 @@ Two proofs are needed, and one of them is the whole point of this document:
 ├─────────────────────────────┤
 │                             │
 │  Chào Minh                  │  Display 32/600 — proves session + name
-│  an.nguyen@gmail.com        │  Label 14/400, text-muted — proves identity
+│  an.nguyen@gmail.com        │  Caption 14/400, text-ink-muted — proves identity
 │                             │
 │  ┌───────────────────────┐  │
 │  │ Nhóm đã sẵn sàng.     │  │  Card: surface-raised, radius-card,
@@ -1085,7 +1289,7 @@ FAB, no settings. CONTEXT.md forbids any transaction-related surface in Phase 1.
 | `--text-display` + Vietnamese line-height | `Chào {name}` — a name with diacritics (`Chào`, `Mạnh`, `Hồng`) is the live test that 1.3 leading doesn't clip |
 | `--text-body`, `--text-label` | Card body, email line |
 | `--color-surface` vs `--color-surface-raised` | Page background vs card — the separation that must survive dark mode |
-| `--color-text-primary/secondary/muted` | All three rendered side by side |
+| `--color-ink/secondary/muted` | All three rendered side by side |
 | `--radius-card`, `--shadow-card` | The card |
 | Dark mode | Flipping the OS theme re-skins the whole screen with no component change — **this is the proof that dark mode was worth deciding now** |
 | Safe-area insets | Visible on a notched phone: content clears the notch and home indicator |
@@ -1099,7 +1303,8 @@ FAB, no settings. CONTEXT.md forbids any transaction-related surface in Phase 1.
 | Card body | `Nhóm đã sẵn sàng. Tính năng ghi chi tiêu sẽ có ở bản cập nhật tiếp theo.` |
 | **Sign out** | `Đăng xuất` |
 | Sign out pending | `Đang đăng xuất…` |
-| Loading (name) | Skeleton `h-9 w-48` matching the Display line box |
+| Loading (greeting) | `<Skeleton className="h-[1.3em] w-48" />` inside a `text-display` wrapper → exactly 41.6px |
+| Loading (email) | `<Skeleton className="h-[1.4em] w-56" />` inside a `text-caption` wrapper → exactly 19.6px |
 | Error — session load failed | **Heading:** `Không tải được thông tin` · **Body:** `Không lấy được thông tin tài khoản. Kéo xuống để tải lại.` · **Action:** `Tải lại` |
 
 **States:** `loading` (skeleton for name + email only; shell and card are static) → `ready`;
@@ -1159,7 +1364,7 @@ Three primitives. Each is a plain function component in `components/ui/`; no CVA
 |---|---|---|---|
 | `<Button>` | `variant: 'primary' \| 'bordered'`, `pending?`, `type` | all 3 screens | Native `<button>`. `min-h-12`. Fixed width when pending. `aria-busy` |
 | `<Card>` | `children` | screens 2, 3 | `bg-surface-raised`, `border-border`, `rounded-card`, `shadow-card`, `p-6` |
-| `<Skeleton>` | `className` | screen 3 | 150ms delayed opacity pulse; caller supplies exact box |
+| `<Skeleton>` | `className` | screen 3 | 150ms delayed opacity pulse. Caller sizes it in `em` inside a type-token wrapper — never a fixed `h-*` (see Rule 3 sizing) |
 
 **Not built in Phase 1** (deferred to the phase that needs them): tab bar, FAB, bottom sheet, input,
 avatar, balance row, money display, dialog.
@@ -1202,11 +1407,20 @@ each as a pass/fail gate.
 5. **Every amount uses `.money`.** Tabular, nowrap.
 6. **Every touch target ≥ 44×44px** with ≥ 8px gaps.
 7. **Never `outline: none`.**
-8. **Bottom-anchored UI composes `--shell-tabbar-height` with `--shell-safe-bottom`.**
-9. **The root layout performs no `await`.** INFRA-07 depends on it.
-10. **Two font weights only: 400 and 600.**
-11. **Four type sizes only.** New emphasis comes from weight or colour, not a new size.
-12. **Four radii only:** 8 / 12 / 16 / full.
+8. **A bar's height grows by its safe-area inset, never absorbs it.** Use
+   `height: calc(var(--shell-*-content) + inset)` with matching padding. A fixed `h-14` plus
+   safe-area padding crushes the content box to 12px on an iPhone 14 Pro and −3px on a 16 Pro.
+9. **`--shell-tabbar-height` already includes `--shell-safe-bottom`** — consume it alone. Adding
+   the inset a second time leaves a dead gap under every screen.
+10. **The root layout performs no `await`.** INFRA-07 depends on it.
+11. **Two font weights only: 400 and 600.**
+12. **Four type *sizes* only:** 32 / 20 / 16 / 14. Label and Caption share 14px and differ only in
+    weight, so they are one size, not two. New emphasis comes from weight or colour, never a new size.
+13. **Never write `text-label font-normal`** — use `text-caption`. Overriding a baked
+    `--text-*--font-weight` is how weight drift starts.
+14. **Four radii only:** 8 / 12 / 16 / full.
+15. **No `--color-*` token may be named so that `text-`/`bg-`/`border-` + its name is ambiguous.**
+    This is why ink colours are `--color-ink*` and the accent is `--color-accent`.
 
 ---
 

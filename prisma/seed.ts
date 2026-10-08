@@ -12,7 +12,14 @@
  *
  * Chạy bằng: pnpm seed
  */
-import "dotenv/config";
+// Xem ghi chú trong prisma.config.ts: giá trị thật ở .env.local, .env là dự
+// phòng. dotenv không ghi đè biến đã có nên thứ tự này cho .env.local thắng
+// .env, và biến thật từ môi trường thắng cả hai.
+import { config as loadEnv } from "dotenv";
+
+loadEnv({ path: ".env.local" });
+loadEnv();
+
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { parseAllowlist, selectRemovedUserIds } from "../src/lib/allowlist";

@@ -1,4 +1,14 @@
-import "dotenv/config";
+// Dự án theo quy ước Next.js: giá trị thật nằm ở .env.local (bị git bỏ qua),
+// còn .env chỉ là dự phòng. `dotenv/config` trần chỉ đọc .env nên mọi lệnh
+// prisma CLI sẽ chết với "DATABASE_URL_UNPOOLED không tồn tại" dù file .env.local
+// đã có đủ — một thông báo không hề nhắc tới tên file đang bị bỏ sót.
+// dotenv không ghi đè biến đã tồn tại, nên .env.local thắng và biến thật từ
+// môi trường (ví dụ trên Vercel) vẫn thắng cả hai.
+import { config as loadEnv } from "dotenv";
+
+loadEnv({ path: ".env.local" });
+loadEnv();
+
 import { defineConfig, env } from "prisma/config";
 
 // Datasource ở đây CỐ TÌNH là chuỗi kết nối KHÔNG qua pooler: thay đổi schema

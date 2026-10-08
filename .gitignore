@@ -41,3 +41,4 @@ coverage/
 # agent skills tải về từ neondatabase/agent-skills — dựng lại bằng `neon skills -y`.
 # skills-lock.json được commit để khóa đúng phiên bản.
 .agents/
+.neon
